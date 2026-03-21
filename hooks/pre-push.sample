@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+bash scripts/check-env-conventions.sh
+if [[ -f envdesk.yaml ]]; then
+	go run ./cmd/envdesk check-sync --json
+fi
+make lint
+make test

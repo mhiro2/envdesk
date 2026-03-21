@@ -1,0 +1,51 @@
+version: 2
+
+builds:
+  - main: ./cmd/envdesk
+    binary: envdesk
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/mhiro2/envdesk/internal/cli.version={{.Version}}
+      - -X github.com/mhiro2/envdesk/internal/cli.commit={{.Commit}}
+      - -X github.com/mhiro2/envdesk/internal/cli.buildDate={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: mhiro2
+    name: envdesk
+  draft: false
+  prerelease: auto
