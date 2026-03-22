@@ -76,6 +76,11 @@ func (d *Document) Write() error {
 
 // UpdateRecipients adds or removes a recipient from matching creation rules.
 func (d *Document) UpdateRecipients(paths []string, recipient string, remove bool) (*UpdateRecipientsResult, error) {
+	normalizedRecipient := strings.TrimSpace(recipient)
+	if normalizedRecipient == "" {
+		return nil, fmt.Errorf("validate recipient: empty value")
+	}
+
 	rules, err := d.matchingRules(paths)
 	if err != nil {
 		return nil, err
@@ -88,7 +93,7 @@ func (d *Document) UpdateRecipients(paths []string, recipient string, remove boo
 		MatchedRules: len(rules),
 	}
 	for _, rule := range rules {
-		ruleChanged, err := updateRuleRecipients(rule, recipient, remove)
+		ruleChanged, err := updateRuleRecipients(rule, normalizedRecipient, remove)
 		if err != nil {
 			return nil, err
 		}
@@ -99,10 +104,10 @@ func (d *Document) UpdateRecipients(paths []string, recipient string, remove boo
 
 	if result.ChangedRules == 0 {
 		if remove {
-			return nil, fmt.Errorf("remove recipient %q: not configured", recipient)
+			return nil, fmt.Errorf("remove recipient %q: not configured", normalizedRecipient)
 		}
 
-		return nil, fmt.Errorf("add recipient %q: already configured", recipient)
+		return nil, fmt.Errorf("add recipient %q: already configured", normalizedRecipient)
 	}
 
 	return result, nil
@@ -160,11 +165,14 @@ func updateRuleRecipients(rule *yaml.Node, recipient string, remove bool) (bool,
 		return false, fmt.Errorf("validate sops creation rule: age must be a sequence")
 	}
 
-	if slices.ContainsFunc(ageNode.Content, func(entry *yaml.Node) bool {
-		return strings.TrimSpace(entry.Value) == recipient
-	}) {
+	if entry := findRecipientNode(ageNode.Content, recipient); entry != nil {
 		if remove {
 			ageNode.Content = removeSequenceValue(ageNode.Content, recipient)
+			return true, nil
+		}
+
+		if entry.Value != recipient {
+			entry.Value = recipient
 			return true, nil
 		}
 
@@ -177,6 +185,16 @@ func updateRuleRecipients(rule *yaml.Node, recipient string, remove bool) (bool,
 
 	ageNode.Content = append(ageNode.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: recipient})
 	return true, nil
+}
+
+func findRecipientNode(nodes []*yaml.Node, recipient string) *yaml.Node {
+	for _, node := range nodes {
+		if strings.TrimSpace(node.Value) == recipient {
+			return node
+		}
+	}
+
+	return nil
 }
 
 func removeSequenceValue(nodes []*yaml.Node, value string) []*yaml.Node {

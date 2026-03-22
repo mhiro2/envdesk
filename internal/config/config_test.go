@@ -7,106 +7,48 @@ import (
 	"testing"
 )
 
-func TestLoad_RejectsInvalidYAML(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	if err := os.WriteFile(configPath, []byte("{{invalid yaml"), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "parse config") {
-		t.Fatalf("Load() error = %q, want parse config failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsUnsupportedVersion(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 99
+func TestLoad_RejectsInvalidConfig(t *testing.T) {
+	tests := []struct {
+		name           string
+		configData     string
+		prepare        func(t *testing.T, root string)
+		wantSubstrings []string
+	}{
+		{
+			name:           "invalid yaml",
+			configData:     "{{invalid yaml",
+			wantSubstrings: []string{"parse config"},
+		},
+		{
+			name: "unsupported version",
+			configData: `version: 99
 services:
   - name: api
     files:
       dev: env/api/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "unsupported version") {
-		t.Fatalf("Load() error = %q, want unsupported version failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsNoServices(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
+`,
+			wantSubstrings: []string{"unsupported version"},
+		},
+		{
+			name: "no services",
+			configData: `version: 1
 services: []
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "no services configured") {
-		t.Fatalf("Load() error = %q, want no services failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsEmptyServiceName(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
+`,
+			wantSubstrings: []string{"no services configured"},
+		},
+		{
+			name: "empty service name",
+			configData: `version: 1
 services:
   - name: ""
     files:
       dev: env/api/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "empty name") {
-		t.Fatalf("Load() error = %q, want empty name failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsDuplicateService(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
+`,
+			wantSubstrings: []string{"empty name"},
+		},
+		{
+			name: "duplicate service",
+			configData: `version: 1
 services:
   - name: api
     files:
@@ -114,119 +56,133 @@ services:
   - name: api
     files:
       stg: env/api/stg.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "duplicate service") {
-		t.Fatalf("Load() error = %q, want duplicate service failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsNoFiles(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
+`,
+			wantSubstrings: []string{"duplicate service"},
+		},
+		{
+			name: "no files",
+			configData: `version: 1
 services:
   - name: api
     files: {}
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "no environments configured") {
-		t.Fatalf("Load() error = %q, want no files failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsEmptyFilePath(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
+`,
+			wantSubstrings: []string{"no environments configured"},
+		},
+		{
+			name: "empty file path",
+			configData: `version: 1
 services:
   - name: api
     files:
       dev: ""
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "empty path") {
-		t.Fatalf("Load() error = %q, want empty path failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsMissingFile(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "read config") {
-		t.Fatalf("Load() error = %q, want read config failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsDirectorySchema(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	schemaDir := filepath.Join(root, "env.schema")
-	if err := os.MkdirAll(filepath.Join(schemaDir, "api.yaml"), 0o750); err != nil {
-		t.Fatalf("mkdir schema: %v", err)
-	}
-	data := `version: 1
+`,
+			wantSubstrings: []string{"empty path"},
+		},
+		{
+			name:           "missing file",
+			wantSubstrings: []string{"read config"},
+		},
+		{
+			name: "directory schema",
+			configData: `version: 1
 services:
   - name: api
     schema: env.schema/api.yaml
     files:
       dev: env/api/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
+`,
+			prepare: func(t *testing.T, root string) {
+				t.Helper()
+
+				if err := os.MkdirAll(filepath.Join(root, "env.schema", "api.yaml"), 0o750); err != nil {
+					t.Fatalf("mkdir schema: %v", err)
+				}
+			},
+			wantSubstrings: []string{"is a directory"},
+		},
+		{
+			name: "unknown fields",
+			configData: `version: 1
+unexpected: true
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+`,
+			wantSubstrings: []string{"parse config"},
+		},
+		{
+			name: "duplicate env files",
+			configData: `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/shared.env
+      stg: env/api/shared.env
+`,
+			wantSubstrings: []string{"duplicate env file"},
+		},
+		{
+			name: "missing schema reference",
+			configData: `version: 1
+services:
+  - name: api
+    schema: env.schema/api.yaml
+    files:
+      dev: env/api/dev.env
+`,
+			wantSubstrings: []string{"schema", "not found"},
+		},
+		{
+			name: "schema outside repository",
+			configData: `version: 1
+services:
+  - name: api
+    schema: ../shared/api.yaml
+    files:
+      dev: env/api/dev.env
+`,
+			wantSubstrings: []string{"outside repository"},
+		},
+		{
+			name: "env file outside repository",
+			configData: `version: 1
+services:
+  - name: api
+    files:
+      dev: ../shared/dev.env
+`,
+			wantSubstrings: []string{"outside repository"},
+		},
 	}
 
-	// Act
-	_, err := Load(configPath)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			root := t.TempDir()
+			configPath := filepath.Join(root, "envdesk.yaml")
+			if tt.prepare != nil {
+				tt.prepare(t, root)
+			}
+			if tt.configData != "" {
+				if err := os.WriteFile(configPath, []byte(tt.configData), 0o600); err != nil {
+					t.Fatalf("write config: %v", err)
+				}
+			}
 
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "is a directory") {
-		t.Fatalf("Load() error = %q, want directory schema failure", err.Error())
+			// Act
+			_, err := Load(configPath)
+
+			// Assert
+			if err == nil {
+				t.Fatal("Load() error = nil, want non-nil")
+			}
+			for _, want := range tt.wantSubstrings {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("Load() error = %q, want substring %q", err.Error(), want)
+				}
+			}
+		})
 	}
 }
 
@@ -287,140 +243,6 @@ func TestProject_ServiceReturnsError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "not found") {
 		t.Fatalf("Service() error = %q, want not found", err.Error())
-	}
-}
-
-func TestLoad_RejectsUnknownFields(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
-unexpected: true
-services:
-  - name: api
-    files:
-      dev: env/api/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "parse config") {
-		t.Fatalf("Load() error = %q, want parse config failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsDuplicateEnvFiles(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
-services:
-  - name: api
-    files:
-      dev: env/api/shared.env
-      stg: env/api/shared.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "duplicate env file") {
-		t.Fatalf("Load() error = %q, want duplicate env file failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsMissingSchemaReference(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
-services:
-  - name: api
-    schema: env.schema/api.yaml
-    files:
-      dev: env/api/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "schema") || !strings.Contains(err.Error(), "not found") {
-		t.Fatalf("Load() error = %q, want missing schema failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsSchemaOutsideRepository(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
-services:
-  - name: api
-    schema: ../shared/api.yaml
-    files:
-      dev: env/api/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "outside repository") {
-		t.Fatalf("Load() error = %q, want repository boundary failure", err.Error())
-	}
-}
-
-func TestLoad_RejectsEnvFileOutsideRepository(t *testing.T) {
-	// Arrange
-	root := t.TempDir()
-	configPath := filepath.Join(root, "envdesk.yaml")
-	data := `version: 1
-services:
-  - name: api
-    files:
-      dev: ../shared/dev.env
-`
-	if err := os.WriteFile(configPath, []byte(data), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	// Act
-	_, err := Load(configPath)
-
-	// Assert
-	if err == nil {
-		t.Fatal("Load() error = nil, want non-nil")
-	}
-	if !strings.Contains(err.Error(), "outside repository") {
-		t.Fatalf("Load() error = %q, want repository boundary failure", err.Error())
 	}
 }
 

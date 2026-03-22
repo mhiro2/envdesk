@@ -281,7 +281,7 @@ func isValidKey(key string) bool {
 }
 
 func isLetter(r rune) bool {
-	return r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z'
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 }
 
 func isDigit(r rune) bool {
