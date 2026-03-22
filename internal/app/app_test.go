@@ -1,6 +1,9 @@
 package app_test
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -348,6 +351,85 @@ services:
 	}
 	if string(updated) != "APP_ENV=stg\nDATABASE_URL=\nFEATURE_FLAG=\n" {
 		t.Fatalf("synced file = %q, want normalized placeholder output", string(updated))
+	}
+}
+
+func TestAppOperations_ContextCanceled(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+      stg: env/api/stg.env
+`,
+		"env/api/dev.env": "APP_ENV=dev\nFEATURE_FLAG=true\n",
+		"env/api/stg.env": "APP_ENV=stg\n",
+	})
+
+	project, err := config.Load(filepath.Join(root, "envdesk.yaml"))
+	if err != nil {
+		t.Fatalf("load project: %v", err)
+	}
+
+	tests := []struct {
+		name string
+		run  func(context.Context) error
+	}{
+		{
+			name: "lint",
+			run: func(ctx context.Context) error {
+				_, err := app.Lint(ctx, project, &cryptotest.PlaintextAdapter{}, app.LintOptions{})
+				if err != nil {
+					return fmt.Errorf("run lint: %w", err)
+				}
+				return nil
+			},
+		},
+		{
+			name: "check sync",
+			run: func(ctx context.Context) error {
+				_, err := app.CheckSync(ctx, project, &cryptotest.PlaintextAdapter{}, app.CheckSyncOptions{})
+				if err != nil {
+					return fmt.Errorf("run check sync: %w", err)
+				}
+				return nil
+			},
+		},
+		{
+			name: "sync keys",
+			run: func(ctx context.Context) error {
+				_, err := app.SyncKeys(ctx, project, &cryptotest.PlaintextAdapter{}, app.SyncKeysOptions{
+					Service:            "api",
+					SourceEnvironment:  "dev",
+					TargetEnvironments: []string{"stg"},
+				})
+				if err != nil {
+					return fmt.Errorf("run sync keys: %w", err)
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+
+			// Act
+			err := tt.run(ctx)
+
+			// Assert
+			if err == nil {
+				t.Fatal("error = nil, want context cancellation")
+			}
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("error = %v, want context.Canceled", err)
+			}
+		})
 	}
 }
 

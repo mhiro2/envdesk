@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -58,18 +59,14 @@ func Doctor(ctx context.Context, opts DoctorOptions) (*DoctorResult, error) {
 	}
 
 	if result.RepositoryMode != "plaintext" {
-		checkToolAvailability(ctx, result, "sops")
-		checkAgeAvailability(ctx, result)
+		checkToolAvailability(result, "sops")
+		checkAgeAvailability(result)
 		checkDoctorSOPSConfig(result, baseDir, project)
 	}
 
 	trackedFiles, err := gitTrackedFiles(ctx, baseDir)
 	if err != nil {
-		severity := SeverityError
-		if strings.Contains(err.Error(), "not a git repository") {
-			severity = SeverityWarning
-		}
-		addDoctorFinding(result, severity, "git", ".git", err.Error())
+		addDoctorFinding(result, doctorGitSeverity(baseDir, err), "git", ".git", err.Error())
 	} else if result.RepositoryMode != "plaintext" {
 		checkDoctorTrackedPlaintext(result, baseDir, trackedFiles, project)
 	}
@@ -102,16 +99,13 @@ func hasDoctorErrors(findings []DoctorFinding) bool {
 	return false
 }
 
-func checkToolAvailability(ctx context.Context, result *DoctorResult, tool string) {
+func checkToolAvailability(result *DoctorResult, tool string) {
 	if _, err := exec.LookPath(tool); err != nil {
 		addDoctorFinding(result, SeverityError, tool, tool, fmt.Sprintf("locate %s: %v", tool, err))
-		return
 	}
-
-	_ = ctx
 }
 
-func checkAgeAvailability(ctx context.Context, result *DoctorResult) {
+func checkAgeAvailability(result *DoctorResult) {
 	if _, err := exec.LookPath("age"); err == nil {
 		return
 	}
@@ -133,7 +127,37 @@ func checkAgeAvailability(ctx context.Context, result *DoctorResult) {
 	}
 
 	addDoctorFinding(result, SeverityError, "age", "age", message)
-	_ = ctx
+}
+
+func doctorGitSeverity(baseDir string, err error) Severity {
+	var execErr *exec.Error
+	if errors.As(err, &execErr) {
+		return SeverityError
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && !doctorHasGitMetadata(baseDir) {
+		return SeverityWarning
+	}
+
+	return SeverityError
+}
+
+func doctorHasGitMetadata(baseDir string) bool {
+	for dir := filepath.Clean(baseDir); ; {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return true
+		} else if !os.IsNotExist(err) {
+			return true
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return false
+		}
+
+		dir = parent
+	}
 }
 
 func validateAgeKeyFile(path string) (bool, string) {

@@ -195,6 +195,30 @@ services:
 	}
 }
 
+func TestDoctor_WarnsWhenOutsideGitRepository(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, doctorHealthyFiles())
+	prepareDoctorTools(t, true, true)
+
+	// Act
+	result, err := app.Doctor(t.Context(), app.DoctorOptions{
+		ConfigPath: filepath.Join(root, "envdesk.yaml"),
+	})
+	// Assert
+	if err != nil {
+		t.Fatalf("Doctor() error = %v, want nil", err)
+	}
+	if !result.Healthy {
+		t.Fatalf("result.Healthy = %v, want true", result.Healthy)
+	}
+	if !hasFinding(result.Findings, "git", app.SeverityWarning) {
+		t.Fatalf("findings = %#v, want git warning", result.Findings)
+	}
+	if hasFinding(result.Findings, "git", app.SeverityError) {
+		t.Fatalf("findings = %#v, want no git error", result.Findings)
+	}
+}
+
 func TestDoctor_AgeKeyFileValidation(t *testing.T) {
 	tests := []struct {
 		name         string

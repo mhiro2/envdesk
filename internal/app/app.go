@@ -153,6 +153,9 @@ func Lint(ctx context.Context, project *config.Project, adapter crypto.Adapter, 
 	if adapter == nil {
 		return nil, fmt.Errorf("lint env files: missing crypto adapter")
 	}
+	if err := checkContext(ctx, "lint env files"); err != nil {
+		return nil, err
+	}
 
 	services, err := selectServices(project, opts.Service)
 	if err != nil {
@@ -163,6 +166,10 @@ func Lint(ctx context.Context, project *config.Project, adapter crypto.Adapter, 
 	matchedEnvironment := false
 
 	for _, service := range services {
+		if err := checkContext(ctx, "lint env files"); err != nil {
+			return nil, err
+		}
+
 		var loadedSchema *schema.Schema
 		if service.SchemaPath != "" {
 			loadedSchema, err = schema.Load(service.SchemaPath)
@@ -172,6 +179,10 @@ func Lint(ctx context.Context, project *config.Project, adapter crypto.Adapter, 
 		}
 
 		for _, envName := range service.Environments() {
+			if err := checkContext(ctx, "lint env files"); err != nil {
+				return nil, err
+			}
+
 			if opts.Environment != "" && opts.Environment != envName {
 				continue
 			}
@@ -310,6 +321,9 @@ func CheckSync(ctx context.Context, project *config.Project, adapter crypto.Adap
 	if adapter == nil {
 		return nil, fmt.Errorf("check sync: missing crypto adapter")
 	}
+	if err := checkContext(ctx, "check key sync"); err != nil {
+		return nil, err
+	}
 
 	services, err := selectServices(project, opts.Service)
 	if err != nil {
@@ -319,6 +333,10 @@ func CheckSync(ctx context.Context, project *config.Project, adapter crypto.Adap
 	issues := make([]SyncIssue, 0)
 
 	for _, service := range services {
+		if err := checkContext(ctx, "check key sync"); err != nil {
+			return nil, err
+		}
+
 		loadedSchema, err := loadServiceSchema(service)
 		if err != nil {
 			return nil, err
@@ -327,6 +345,10 @@ func CheckSync(ctx context.Context, project *config.Project, adapter crypto.Adap
 		envNames := service.Environments()
 		envDocs := make(map[string]*envfile.Document, len(envNames))
 		for _, envName := range envNames {
+			if err := checkContext(ctx, "check key sync"); err != nil {
+				return nil, err
+			}
+
 			doc, err := decryptAndParse(ctx, adapter, service, envName)
 			if err != nil {
 				return nil, err
@@ -389,6 +411,9 @@ func SyncKeys(ctx context.Context, project *config.Project, adapter crypto.Adapt
 	if adapter == nil {
 		return nil, fmt.Errorf("sync keys: missing crypto adapter")
 	}
+	if err := checkContext(ctx, "sync keys"); err != nil {
+		return nil, err
+	}
 
 	service, err := project.Service(opts.Service)
 	if err != nil {
@@ -414,6 +439,10 @@ func SyncKeys(ctx context.Context, project *config.Project, adapter crypto.Adapt
 	sourceValues := sourceDoc.Values()
 
 	for _, targetEnv := range targetEnvs {
+		if err := checkContext(ctx, "sync keys"); err != nil {
+			return nil, err
+		}
+
 		targetPath, err := service.FilePath(targetEnv)
 		if err != nil {
 			return nil, fmt.Errorf("lookup target env file for %s/%s: %w", service.Name, targetEnv, err)
@@ -487,6 +516,18 @@ func SyncKeys(ctx context.Context, project *config.Project, adapter crypto.Adapt
 		SourceEnvironment:  opts.SourceEnvironment,
 		TargetEnvironments: results,
 	}, nil
+}
+
+func checkContext(ctx context.Context, action string) error {
+	if ctx == nil {
+		return nil
+	}
+
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("%s: %w", action, err)
+	}
+
+	return nil
 }
 
 // SchemaViolation represents a single schema validation issue found in a document.
