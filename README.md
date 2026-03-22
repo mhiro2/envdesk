@@ -116,6 +116,7 @@ envdesk check-sync --strict-required-only
 ```
 
 `lint` checks the env file against schema. `check-sync` catches key drift across environments, so it becomes more useful as you add `stg` and `prod`.
+`envdesk check-sync --json` still exits non-zero when drift is present so CI can consume JSON without losing failure signals.
 
 ### 5. When the repository grows
 

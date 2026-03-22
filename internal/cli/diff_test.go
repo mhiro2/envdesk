@@ -14,7 +14,6 @@ import (
 
 func TestRootCommand_DiffCiSummaryFailsOnChanges(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -27,7 +26,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\nEXTRA_FLAG=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -57,7 +56,6 @@ services:
 
 func TestRootCommand_DiffCiSummaryReportsNoChanges(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -70,7 +68,7 @@ services:
 		"env/api/stg.env": "APP_ENV=dev\nFEATURE_FLAG=true\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -96,7 +94,6 @@ services:
 
 func TestRootCommand_DiffJSONIncludesSummary(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -109,7 +106,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\nEXTRA_FLAG=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -140,7 +137,6 @@ services:
 
 func TestRootCommand_DiffCiSummaryIncludesRenameCandidates(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -153,7 +149,7 @@ services:
 		"env/api/stg.env": "APP_ENV=dev\nNEW_FLAG=shared\nKEEP=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -180,7 +176,6 @@ services:
 
 func TestRootCommand_DiffShowMetadataIncludesFindings(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -205,7 +200,7 @@ services:
 		"env/api/stg.env": "APP_ENV=dev\nEXTRA_FLAG=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -234,7 +229,7 @@ services:
 
 func TestRootCommand_DiffJSONIncludesSummaryForEncryptedEnv(t *testing.T) {
 	// Arrange
-	setupCryptoAdapter(t, &cryptotest.FakeEncryptAdapter{})
+	adapter := &cryptotest.FakeEncryptAdapter{}
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -247,7 +242,7 @@ services:
 		"env/api/stg.env": cryptotest.FakeEncryptContent("APP_ENV=stg\nEXTRA_FLAG=1\n"),
 	})
 
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)

@@ -14,7 +14,6 @@ import (
 
 func TestRootCommand_DiffValueModePublic_HidesSecretValues(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -39,7 +38,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\nDATABASE_URL=https://stg.example.com\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -68,7 +67,6 @@ services:
 
 func TestCheckSyncCommand_StrictRequiredOnly_FiltersOutput(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -99,7 +97,7 @@ services:
 		"env/api/prod.env": "APP_ENV=prod\nREQUIRED_TIMEOUT=45\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -143,14 +141,12 @@ services:
 		"alice.pub":       "age1aliceexample\n",
 	})
 
-	setupCryptoAdapter(t, &cryptotest.StubAdapter{
+	cmd := newRootCommandWithCryptoAdapter(t, &cryptotest.StubAdapter{
 		RekeyFunc: func(context.Context, string) error {
 			t.Fatal("Rekey() should not be called during dry-run")
 			return nil
 		},
 	})
-
-	cmd := NewRootCommand()
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)

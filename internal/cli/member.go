@@ -13,7 +13,7 @@ import (
 
 type memberAction func(ctx context.Context, project *config.Project, adapter crypto.Adapter, opts app.MemberOptions) (*app.MemberResult, error)
 
-func newMemberCommand() *cobra.Command {
+func newMemberCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "member",
 		Short: "Manage team recipients for encrypted files",
@@ -21,13 +21,14 @@ func newMemberCommand() *cobra.Command {
   envdesk member remove age1alice... --json`,
 	}
 
-	cmd.AddCommand(newMemberAddCommand(), newMemberRemoveCommand())
+	cmd.AddCommand(newMemberAddCommand(newCryptoAdapter), newMemberRemoveCommand(newCryptoAdapter))
 
 	return cmd
 }
 
-func newMemberAddCommand() *cobra.Command {
+func newMemberAddCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	return newMemberSubcommand(
+		newCryptoAdapter,
 		"add",
 		"Add a recipient to .sops.yaml",
 		`  envdesk member add alice.pub
@@ -38,8 +39,9 @@ func newMemberAddCommand() *cobra.Command {
 	)
 }
 
-func newMemberRemoveCommand() *cobra.Command {
+func newMemberRemoveCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	return newMemberSubcommand(
+		newCryptoAdapter,
 		"remove",
 		"Remove a recipient from .sops.yaml",
 		`  envdesk member remove alice.pub
@@ -50,7 +52,7 @@ func newMemberRemoveCommand() *cobra.Command {
 	)
 }
 
-func newMemberSubcommand(use, short, example, errPrefix string, action memberAction) *cobra.Command {
+func newMemberSubcommand(newCryptoAdapter cryptoAdapterFactory, use, short, example, errPrefix string, action memberAction) *cobra.Command {
 	var scope string
 	var rekey bool
 	var dryRun bool

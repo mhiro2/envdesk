@@ -79,6 +79,7 @@ Use `export` only for short-lived local workflows such as creating `.env.local`.
 
 `envdesk check-sync` reports key drift across environments and classifies each issue as `required`, `optional`, `undeclared`, or `untracked`.
 Use `--strict-required-only` when CI should fail only on missing required schema keys.
+`--json` keeps the same non-zero exit behavior when drift exists so machine-readable output still works in CI.
 
 `envdesk sync-keys --placeholders` inserts schema-aware defaults for missing keys.
 

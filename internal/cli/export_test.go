@@ -32,9 +32,7 @@ services:
 			return []byte("APP_ENV=dev\n"), nil
 		},
 	}
-	setupCryptoAdapter(t, adapter)
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -89,13 +87,11 @@ services:
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
 
-	setupCryptoAdapter(t, &cryptotest.StubAdapter{
+	cmd := newRootCommandWithCryptoAdapter(t, &cryptotest.StubAdapter{
 		DecryptFunc: func(context.Context, string) ([]byte, error) {
 			return []byte("APP_ENV=dev\n"), nil
 		},
 	})
-
-	cmd := NewRootCommand()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.SetOut(&stdout)
@@ -138,13 +134,11 @@ services:
 		".env.local":      "existing\n",
 	})
 
-	setupCryptoAdapter(t, &cryptotest.StubAdapter{
+	cmd := newRootCommandWithCryptoAdapter(t, &cryptotest.StubAdapter{
 		DecryptFunc: func(context.Context, string) ([]byte, error) {
 			return []byte("APP_ENV=dev\n"), nil
 		},
 	})
-
-	cmd := NewRootCommand()
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)

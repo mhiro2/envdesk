@@ -13,7 +13,6 @@ import (
 
 func TestRootCommand_SyncKeysDryRunReportsTargets(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -26,7 +25,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\nLEGACY_FLAG=true\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -52,7 +51,6 @@ services:
 
 func TestRootCommand_SyncKeysRejectsDuplicateTargets(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -65,7 +63,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -92,7 +90,6 @@ services:
 func TestRootCommand_SyncKeysWritesEncryptedOutput(t *testing.T) {
 	// Arrange
 	adapter := &cryptotest.FakeEncryptAdapter{}
-	setupCryptoAdapter(t, adapter)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -105,7 +102,7 @@ services:
 		"env/api/stg.env": cryptotest.FakeEncryptContent("APP_ENV=stg\nLEGACY_FLAG=true\n"),
 	})
 
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)

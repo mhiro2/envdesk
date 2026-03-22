@@ -6,42 +6,48 @@ import (
 	"github.com/mhiro2/envdesk/internal/crypto"
 )
 
-var newCryptoAdapter = func() crypto.Adapter {
-	return crypto.NewSOPS()
-}
+type cryptoAdapterFactory func() crypto.Adapter
 
 func NewRootCommand() *cobra.Command {
-	initCmd := newInitCommand()
+	return newRootCommand(defaultCryptoAdapterFactory)
+}
+
+func newRootCommand(adapterFactory cryptoAdapterFactory) *cobra.Command {
+	if adapterFactory == nil {
+		adapterFactory = defaultCryptoAdapterFactory
+	}
+
+	initCmd := newInitCommand(adapterFactory)
 	initCmd.GroupID = "setup"
 
-	exampleCmd := newExampleCommand()
+	exampleCmd := newExampleCommand(adapterFactory)
 	exampleCmd.GroupID = "daily"
 
 	editCmd := newEditCommand()
 	editCmd.GroupID = "daily"
 
-	exportCmd := newExportCommand()
+	exportCmd := newExportCommand(adapterFactory)
 	exportCmd.GroupID = "daily"
 
-	diffCmd := newDiffCommand()
+	diffCmd := newDiffCommand(adapterFactory)
 	diffCmd.GroupID = "review"
 
-	lintCmd := newLintCommand()
+	lintCmd := newLintCommand(adapterFactory)
 	lintCmd.GroupID = "review"
 
-	checkSyncCmd := newCheckSyncCommand()
+	checkSyncCmd := newCheckSyncCommand(adapterFactory)
 	checkSyncCmd.GroupID = "review"
 
 	doctorCmd := newDoctorCommand()
 	doctorCmd.GroupID = "setup"
 
-	syncKeysCmd := newSyncKeysCommand()
+	syncKeysCmd := newSyncKeysCommand(adapterFactory)
 	syncKeysCmd.GroupID = "review"
 
-	memberCmd := newMemberCommand()
+	memberCmd := newMemberCommand(adapterFactory)
 	memberCmd.GroupID = "access"
 
-	rekeyCmd := newRekeyCommand()
+	rekeyCmd := newRekeyCommand(adapterFactory)
 	rekeyCmd.GroupID = "access"
 
 	completionCmd := newCompletionCommand()
@@ -99,4 +105,8 @@ and aligning environment files across services and environments.`,
 	cmd.SetVersionTemplate(`{{printf "%s\n" .Version}}`)
 
 	return cmd
+}
+
+func defaultCryptoAdapterFactory() crypto.Adapter {
+	return crypto.NewSOPS()
 }

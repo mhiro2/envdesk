@@ -8,7 +8,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newRekeyCommand() *cobra.Command {
+func newRekeyCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var service string
 	var envName string
 	var dryRun bool

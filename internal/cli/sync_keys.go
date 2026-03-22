@@ -9,7 +9,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newSyncKeysCommand() *cobra.Command {
+func newSyncKeysCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var targets []string
 	var dryRun bool
 	var placeholders bool

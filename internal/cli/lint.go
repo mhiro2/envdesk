@@ -8,7 +8,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newLintCommand() *cobra.Command {
+func newLintCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var service string
 	var environment string
 	var strict bool

@@ -11,7 +11,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newDiffCommand() *cobra.Command {
+func newDiffCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var valueMode string
 	var showMetadata bool
 	var jsonOutput bool

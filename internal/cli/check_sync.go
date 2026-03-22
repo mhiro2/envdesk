@@ -11,7 +11,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newCheckSyncCommand() *cobra.Command {
+func newCheckSyncCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var service string
 	var jsonOutput bool
 	var ciSummary bool
@@ -78,7 +78,7 @@ func newCheckSyncCommand() *cobra.Command {
 				}
 			}
 
-			if len(issues) > 0 && (!jsonOutput || ciSummary) {
+			if len(issues) > 0 {
 				return withExitCode(fmt.Errorf("check key sync: found %d drift issues", len(issues)))
 			}
 
@@ -88,7 +88,7 @@ func newCheckSyncCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&service, "service", "", "Limit checks to a single service")
 	cmd.Flags().BoolVar(&strictRequiredOnly, "strict-required-only", false, "Only report drift for required schema keys")
-	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print machine-readable output")
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print machine-readable output and exit non-zero when drift is present")
 	cmd.Flags().BoolVar(&ciSummary, "ci-summary", false, "Print a concise summary and fail when drift is present")
 
 	_ = cmd.RegisterFlagCompletionFunc("service", completeServiceFlag)

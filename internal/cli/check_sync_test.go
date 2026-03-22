@@ -14,7 +14,6 @@ import (
 
 func TestCheckSyncCommand_JSONOutput(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -27,7 +26,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -38,9 +37,12 @@ services:
 	})
 
 	// Act
-	_ = cmd.Execute()
+	err := cmd.Execute()
 
 	// Assert
+	if err == nil {
+		t.Fatal("Execute() error = nil, want non-nil")
+	}
 	var issues []app.SyncIssue
 	if unmarshalErr := json.Unmarshal(stdout.Bytes(), &issues); unmarshalErr != nil {
 		t.Fatalf("unmarshal json: %v", unmarshalErr)
@@ -55,7 +57,6 @@ services:
 
 func TestCheckSyncCommand_ServiceFilter(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -74,7 +75,7 @@ services:
 		"env/web/stg.env": "APP_ENV=stg\nEXTRA=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -101,7 +102,6 @@ services:
 
 func TestCheckSyncCommand_NoDrift(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -114,7 +114,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -136,10 +136,9 @@ services:
 
 func TestCheckSyncCommand_FailsOnMissingConfig(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := t.TempDir()
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -159,7 +158,6 @@ func TestCheckSyncCommand_FailsOnMissingConfig(t *testing.T) {
 
 func TestCheckSyncCommand_ReportsDrift(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -172,7 +170,7 @@ services:
 		"env/api/stg.env": "APP_ENV=stg\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -195,7 +193,6 @@ services:
 
 func TestCheckSyncCommand_CiSummaryReportsDrift(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -210,7 +207,7 @@ services:
 		"env/api/prod.env": "APP_ENV=prod\nPAYMENT_TIMEOUT=60\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -234,7 +231,6 @@ services:
 
 func TestCheckSyncCommand_CiSummaryReportsNoDrift(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -247,7 +243,7 @@ services:
 		"env/api/stg.env": "APP_ENV=dev\nPAYMENT_TIMEOUT=30\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -270,7 +266,7 @@ services:
 
 func TestCheckSyncCommand_JSONOutputForEncryptedEnv(t *testing.T) {
 	// Arrange
-	setupCryptoAdapter(t, &cryptotest.FakeEncryptAdapter{})
+	adapter := &cryptotest.FakeEncryptAdapter{}
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -283,7 +279,7 @@ services:
 		"env/api/stg.env": cryptotest.FakeEncryptContent("APP_ENV=stg\n"),
 	})
 
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -294,9 +290,12 @@ services:
 	})
 
 	// Act
-	_ = cmd.Execute()
+	err := cmd.Execute()
 
 	// Assert
+	if err == nil {
+		t.Fatal("Execute() error = nil, want non-nil")
+	}
 	var issues []app.SyncIssue
 	if unmarshalErr := json.Unmarshal(stdout.Bytes(), &issues); unmarshalErr != nil {
 		t.Fatalf("unmarshal json: %v", unmarshalErr)

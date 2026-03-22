@@ -35,9 +35,7 @@ services:
 			return nil
 		},
 	}
-	setupCryptoAdapter(t, adapter)
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -87,9 +85,7 @@ services:
 			return nil
 		},
 	}
-	setupCryptoAdapter(t, adapter)
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -142,9 +138,7 @@ services:
 			return nil
 		},
 	}
-	setupCryptoAdapter(t, adapter)
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.SetOut(&stdout)

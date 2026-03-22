@@ -9,7 +9,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newInitCommand() *cobra.Command {
+func newInitCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var services []string
 	var environments []string
 	var force bool

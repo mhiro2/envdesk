@@ -8,7 +8,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newExampleCommand() *cobra.Command {
+func newExampleCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "example",
 		Short: "Generate or update .env.example files",
@@ -16,12 +16,12 @@ func newExampleCommand() *cobra.Command {
   envdesk example generate --service api --out docs/api.env.example --force`,
 	}
 
-	cmd.AddCommand(newExampleGenerateCommand())
+	cmd.AddCommand(newExampleGenerateCommand(newCryptoAdapter))
 
 	return cmd
 }
 
-func newExampleGenerateCommand() *cobra.Command {
+func newExampleGenerateCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var service string
 	var out string
 	var force bool

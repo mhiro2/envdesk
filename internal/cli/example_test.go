@@ -34,10 +34,8 @@ services:
 			return []byte("APP_ENV=dev\nAPI_URL=https://dev.example.com\n"), nil
 		},
 	}
-	setupCryptoAdapter(t, adapter)
-
 	outPath := filepath.Join(root, "docs", "api.env.example")
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)

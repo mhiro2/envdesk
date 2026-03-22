@@ -3,20 +3,20 @@ package cli
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/mhiro2/envdesk/internal/crypto"
 	"github.com/mhiro2/envdesk/internal/testutil/cryptotest"
 )
 
-func setupCryptoAdapter(t *testing.T, adapter crypto.Adapter) {
+func newRootCommandWithCryptoAdapter(t *testing.T, adapter crypto.Adapter) *cobra.Command {
 	t.Helper()
-	original := newCryptoAdapter
-	newCryptoAdapter = func() crypto.Adapter {
+	return newRootCommand(func() crypto.Adapter {
 		return adapter
-	}
-	t.Cleanup(func() { newCryptoAdapter = original })
+	})
 }
 
-func setupPlaintextAdapter(t *testing.T) {
+func newPlaintextRootCommand(t *testing.T) *cobra.Command {
 	t.Helper()
-	setupCryptoAdapter(t, &cryptotest.PlaintextAdapter{})
+	return newRootCommandWithCryptoAdapter(t, &cryptotest.PlaintextAdapter{})
 }

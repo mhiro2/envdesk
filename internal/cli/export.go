@@ -10,7 +10,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/app"
 )
 
-func newExportCommand() *cobra.Command {
+func newExportCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	var out string
 	var stdout bool
 	var force bool

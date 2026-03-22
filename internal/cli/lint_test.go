@@ -14,7 +14,6 @@ import (
 
 func TestLintCommand_JSONIncludesCounts(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -37,7 +36,7 @@ services:
 		"env/api/dev.env": "APP_ENV=local\nEXTRA_FLAG=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -74,7 +73,6 @@ services:
 
 func TestLintCommand_StrictTreatsWarningsAsErrors(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -92,7 +90,7 @@ services:
 		"env/api/dev.env": "APP_ENV=dev\nEXTRA_FLAG=1\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -119,7 +117,6 @@ services:
 
 func TestLintCommand_FailsOnMalformedSchema(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -138,7 +135,7 @@ services:
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -161,7 +158,6 @@ services:
 
 func TestLintCommand_FailsOnEnvParseError(t *testing.T) {
 	// Arrange
-	setupPlaintextAdapter(t)
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -179,7 +175,7 @@ services:
 		"env/api/dev.env": "APP_ENV\n",
 	})
 
-	cmd := NewRootCommand()
+	cmd := newPlaintextRootCommand(t)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -202,7 +198,7 @@ services:
 
 func TestLintCommand_EncryptedJSONIncludesCounts(t *testing.T) {
 	// Arrange
-	setupCryptoAdapter(t, &cryptotest.FakeEncryptAdapter{})
+	adapter := &cryptotest.FakeEncryptAdapter{}
 	root := projecttest.WriteProject(t, map[string]string{
 		"envdesk.yaml": `version: 1
 services:
@@ -225,7 +221,7 @@ services:
 		"env/api/dev.env": cryptotest.FakeEncryptContent("APP_ENV=local\nEXTRA_FLAG=1\n"),
 	})
 
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)

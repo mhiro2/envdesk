@@ -40,9 +40,7 @@ services:
 			return nil
 		},
 	}
-	setupCryptoAdapter(t, adapter)
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, adapter)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -97,9 +95,7 @@ services:
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
 
-	setupCryptoAdapter(t, &cryptotest.StubAdapter{})
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, &cryptotest.StubAdapter{})
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
@@ -146,9 +142,7 @@ services:
 		"alice.pub":       "age1aliceexamplerecipient0000000000000000000000000000000\n",
 	})
 
-	setupCryptoAdapter(t, &cryptotest.StubAdapter{})
-
-	cmd := NewRootCommand()
+	cmd := newRootCommandWithCryptoAdapter(t, &cryptotest.StubAdapter{})
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stdout)
