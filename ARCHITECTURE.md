@@ -45,6 +45,7 @@ The tool assumes the team uses age recipients through `.sops.yaml` and manages r
 - `diff` compares structure between two environments and supports secret-safe detail modes.
 - `lint` validates env files against schema.
 - `check-sync` reports schema-aware key drift across environments.
+- `status` aggregates per-environment lint, drift, and file update signals into a dashboard view.
 - `sync-keys` normalizes target key sets from a source environment and can generate schema-aware placeholders.
 - `doctor` validates the repository, local crypto prerequisites, and detected repository mode.
 - `example generate` produces non-secret example env files with schema comments.

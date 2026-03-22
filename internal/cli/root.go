@@ -38,6 +38,9 @@ func newRootCommand(adapterFactory cryptoAdapterFactory) *cobra.Command {
 	checkSyncCmd := newCheckSyncCommand(adapterFactory)
 	checkSyncCmd.GroupID = "review"
 
+	statusCmd := newStatusCommand(adapterFactory)
+	statusCmd.GroupID = "review"
+
 	doctorCmd := newDoctorCommand()
 	doctorCmd.GroupID = "setup"
 
@@ -63,6 +66,7 @@ and aligning environment files across services and environments.`,
 		Example: `  envdesk init --services api,web --envs dev,stg,prod --sops
   envdesk edit api dev
   envdesk diff api dev stg --show-metadata
+  envdesk status --service api
   envdesk check-sync --json`,
 		Version:       buildVersion(),
 		SilenceUsage:  true,
@@ -95,6 +99,7 @@ and aligning environment files across services and environments.`,
 		diffCmd,
 		lintCmd,
 		checkSyncCmd,
+		statusCmd,
 		doctorCmd,
 		syncKeysCmd,
 		memberCmd,

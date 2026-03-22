@@ -81,6 +81,9 @@ Use `export` only for short-lived local workflows such as creating `.env.local`.
 Use `--strict-required-only` when CI should fail only on missing required schema keys.
 `--json` keeps the same non-zero exit behavior when drift exists so machine-readable output still works in CI.
 
+`envdesk status` gives a service-by-environment dashboard with lint state, sync state, and each env file's last updated time.
+Use it when you want one review-oriented snapshot before a change or release.
+
 `envdesk sync-keys --placeholders` inserts schema-aware defaults for missing keys.
 
 - `bool` becomes `false`

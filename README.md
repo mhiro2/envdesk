@@ -117,6 +117,7 @@ envdesk check-sync --strict-required-only
 
 `lint` checks the env file against schema. `check-sync` catches key drift across environments, so it becomes more useful as you add `stg` and `prod`.
 `envdesk check-sync --json` still exits non-zero when drift is present so CI can consume JSON without losing failure signals.
+`envdesk status` combines per-environment lint state, sync state, and last updated time into one dashboard.
 
 ### 5. When the repository grows
 
@@ -157,6 +158,12 @@ Check whether required keys drifted across environments.
 
 ```bash
 envdesk check-sync --strict-required-only
+```
+
+Review the overall service/environment matrix.
+
+```bash
+envdesk status --service api
 ```
 
 Compare two environments without exposing secrets by default.
@@ -212,7 +219,7 @@ services:
 All configured `schema` and env file paths must stay inside the repository root that contains `envdesk.yaml`.
 Paths that escape with absolute locations or `../` are rejected during config load.
 
-Schema files define key requirements, types, and whether a key is secret. `diff`, `check-sync`, `sync-keys`, and `example generate` all use that metadata for safer output, drift classification, placeholder generation, and commented examples.
+Schema files define key requirements, types, and whether a key is secret. `diff`, `check-sync`, `status`, `sync-keys`, and `example generate` all use that metadata for safer output, drift classification, placeholder generation, and commented examples.
 See [docs/guide.md](./docs/guide.md) for the current schema model and command behavior.
 
 ## 📝 Env File Dialect
