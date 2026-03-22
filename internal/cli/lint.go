@@ -90,6 +90,7 @@ func newLintCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Print machine-readable output")
 
 	_ = cmd.RegisterFlagCompletionFunc("service", completeServiceFlag)
+	_ = cmd.RegisterFlagCompletionFunc("env", completeEnvironmentFlag)
 
 	return cmd
 }

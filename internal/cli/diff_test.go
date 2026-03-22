@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/mhiro2/envdesk/internal/app"
 	"github.com/mhiro2/envdesk/internal/testutil/cryptotest"
 	"github.com/mhiro2/envdesk/internal/testutil/projecttest"
@@ -89,6 +91,113 @@ services:
 	}
 	if stdout.String() != "api dev..stg: no changes\n" {
 		t.Fatalf("stdout = %q, want no changes summary", stdout.String())
+	}
+}
+
+func TestRootCommand_DiffCiSummaryWarnsOnSummaryWriteErrorWhenVerbose(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+      stg: env/api/stg.env
+`,
+		"env/api/dev.env": "APP_ENV=dev\nFEATURE_FLAG=true\n",
+		"env/api/stg.env": "APP_ENV=dev\nFEATURE_FLAG=true\n",
+	})
+	t.Setenv("GITHUB_STEP_SUMMARY", t.TempDir())
+
+	cmd := newPlaintextRootCommand(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{
+		"--config", filepath.Join(root, "envdesk.yaml"),
+		"--verbose",
+		"diff",
+		"api",
+		"dev",
+		"stg",
+		"--ci-summary",
+	})
+
+	// Act
+	err := cmd.Execute()
+	// Assert
+	if err != nil {
+		t.Fatalf("Execute() error = %v, want nil", err)
+	}
+	if stdout.String() != "api dev..stg: no changes\n" {
+		t.Fatalf("stdout = %q, want no changes summary", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "skip GitHub summary") {
+		t.Fatalf("stderr = %q, want summary warning", stderr.String())
+	}
+}
+
+func TestCompleteEnvironmentFlag_UsesServiceFilterWhenPresent(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+      stg: env/api/stg.env
+  - name: web
+    files:
+      prod: env/web/prod.env
+`,
+	})
+
+	cmd := &cobra.Command{Use: "lint"}
+	cmd.Flags().String("config", filepath.Join(root, "envdesk.yaml"), "")
+	cmd.Flags().String("service", "api", "")
+
+	// Act
+	envs, directive := completeEnvironmentFlag(cmd, nil, "")
+
+	// Assert
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", directive, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(envs) != 2 || envs[0] != "dev" || envs[1] != "stg" {
+		t.Fatalf("envs = %v, want [dev stg]", envs)
+	}
+}
+
+func TestCompleteEnvironmentFlag_ReturnsUniqueEnvironmentsWithoutServiceFilter(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+      stg: env/api/stg.env
+  - name: web
+    files:
+      dev: env/web/dev.env
+      prod: env/web/prod.env
+`,
+	})
+
+	cmd := &cobra.Command{Use: "lint"}
+	cmd.Flags().String("config", filepath.Join(root, "envdesk.yaml"), "")
+	cmd.Flags().String("service", "", "")
+
+	// Act
+	envs, directive := completeEnvironmentFlag(cmd, nil, "")
+
+	// Assert
+	if directive != cobra.ShellCompDirectiveNoFileComp {
+		t.Fatalf("directive = %v, want %v", directive, cobra.ShellCompDirectiveNoFileComp)
+	}
+	if len(envs) != 3 || envs[0] != "dev" || envs[1] != "prod" || envs[2] != "stg" {
+		t.Fatalf("envs = %v, want [dev prod stg]", envs)
 	}
 }
 

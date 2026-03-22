@@ -264,6 +264,47 @@ services:
 	}
 }
 
+func TestCheckSyncCommand_CiSummaryWarnsOnSummaryWriteErrorWhenVerbose(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+      stg: env/api/stg.env
+`,
+		"env/api/dev.env": "APP_ENV=dev\n",
+		"env/api/stg.env": "APP_ENV=stg\n",
+	})
+	t.Setenv("GITHUB_STEP_SUMMARY", t.TempDir())
+
+	cmd := newPlaintextRootCommand(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{
+		"--config", filepath.Join(root, "envdesk.yaml"),
+		"--verbose",
+		"check-sync",
+		"--ci-summary",
+	})
+
+	// Act
+	err := cmd.Execute()
+	// Assert
+	if err != nil {
+		t.Fatalf("Execute() error = %v, want nil", err)
+	}
+	if !strings.Contains(stdout.String(), "all environments are in sync") {
+		t.Fatalf("stdout = %q, want no drift output", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "skip GitHub summary") {
+		t.Fatalf("stderr = %q, want summary warning", stderr.String())
+	}
+}
+
 func TestCheckSyncCommand_JSONOutputForEncryptedEnv(t *testing.T) {
 	// Arrange
 	adapter := &cryptotest.FakeEncryptAdapter{}

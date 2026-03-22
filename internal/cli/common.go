@@ -76,6 +76,11 @@ func isQuiet(cmd *cobra.Command) bool {
 	return q
 }
 
+func isVerbose(cmd *cobra.Command) bool {
+	v, _ := cmd.Flags().GetBool("verbose")
+	return v
+}
+
 // PrintErrorHint prints a contextual hint for common errors to help users fix issues.
 func PrintErrorHint(w io.Writer, err error) {
 	if err == nil {

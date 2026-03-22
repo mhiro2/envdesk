@@ -50,7 +50,9 @@ func newDiffCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 
 			if ciSummary {
 				if summaryPath := os.Getenv("GITHUB_STEP_SUMMARY"); summaryPath != "" {
-					_ = writeDiffGitHubSummary(summaryPath, result)
+					if err := writeDiffGitHubSummary(summaryPath, result); err != nil && isVerbose(cmd) {
+						fprintWarning(cmd.ErrOrStderr(), fmt.Sprintf("skip GitHub summary: %v", err))
+					}
 				}
 
 				line := formatDiffSummary(result)

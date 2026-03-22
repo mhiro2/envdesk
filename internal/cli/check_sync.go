@@ -41,7 +41,9 @@ func newCheckSyncCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				}
 			case ciSummary:
 				if summaryPath := os.Getenv("GITHUB_STEP_SUMMARY"); summaryPath != "" {
-					_ = writeCheckSyncGitHubSummary(summaryPath, issues)
+					if err := writeCheckSyncGitHubSummary(summaryPath, issues); err != nil && isVerbose(cmd) {
+						fprintWarning(cmd.ErrOrStderr(), fmt.Sprintf("skip GitHub summary: %v", err))
+					}
 				}
 				lines := checkSyncSummaryLines(issues)
 				if len(lines) == 0 {
