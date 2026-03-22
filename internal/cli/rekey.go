@@ -32,8 +32,22 @@ func newRekeyCommand() *cobra.Command {
 				DryRun:  dryRun,
 			})
 
-			if jsonOutput && result != nil {
-				return writeJSON(cmd.OutOrStdout(), result)
+			if jsonOutput {
+				if result == nil {
+					if err != nil {
+						return fmt.Errorf("rekey env files: %w", err)
+					}
+
+					return fmt.Errorf("rekey env files: empty result")
+				}
+				if writeErr := writeJSON(cmd.OutOrStdout(), result); writeErr != nil {
+					return writeErr
+				}
+				if err != nil {
+					return fmt.Errorf("rekey env files: %w", err)
+				}
+
+				return nil
 			}
 
 			if result != nil {

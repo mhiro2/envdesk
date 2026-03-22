@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -115,6 +116,72 @@ services:
 	}
 	if len(rekeyPaths) != 2 {
 		t.Fatalf("len(adapter.rekeyPaths) = %d, want 2", len(rekeyPaths))
+	}
+}
+
+func TestRootCommand_RekeyJSON_ReturnsErrorAfterWritingResult(t *testing.T) {
+	// Arrange
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+      stg: env/api/stg.env
+`,
+		"env/api/dev.env": "APP_ENV=dev\n",
+		"env/api/stg.env": "APP_ENV=stg\n",
+	})
+
+	adapter := &cryptotest.StubAdapter{
+		RekeyFunc: func(_ context.Context, path string) error {
+			if filepath.Base(path) == "stg.env" {
+				return errors.New("mock rekey failure")
+			}
+
+			return nil
+		},
+	}
+	setupCryptoAdapter(t, adapter)
+
+	cmd := NewRootCommand()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{
+		"--config", filepath.Join(root, "envdesk.yaml"),
+		"rekey",
+		"--service", "api",
+		"--json",
+	})
+
+	// Act
+	err := cmd.Execute()
+
+	// Assert
+	if err == nil {
+		t.Fatal("Execute() error = nil, want partial failure error")
+	}
+	if err.Error() != "rekey env files: rekey env files: 1 of 2 files failed" {
+		t.Fatalf("Execute() error = %q, want wrapped partial failure", err.Error())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+
+	var result app.RekeyResult
+	if unmarshalErr := json.Unmarshal(stdout.Bytes(), &result); unmarshalErr != nil {
+		t.Fatalf("unmarshal json: %v", unmarshalErr)
+	}
+	if len(result.Files) != 1 {
+		t.Fatalf("len(result.Files) = %d, want 1", len(result.Files))
+	}
+	if len(result.Errors) != 1 {
+		t.Fatalf("len(result.Errors) = %d, want 1", len(result.Errors))
+	}
+	if result.Errors[0].Env != "stg" {
+		t.Fatalf("result.Errors[0].Env = %q, want stg", result.Errors[0].Env)
 	}
 }
 
