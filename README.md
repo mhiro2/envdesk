@@ -28,6 +28,12 @@ Git-friendly env operations for teams.
 Install with:
 
 ```bash
+# Homebrew (macOS / Linux) — [third-party tap](https://github.com/mhiro2/homebrew-tap)
+brew install --cask mhiro2/tap/envdesk
+```
+
+```bash
+# Go toolchain
 go install github.com/mhiro2/envdesk/cmd/envdesk@latest
 ```
 
