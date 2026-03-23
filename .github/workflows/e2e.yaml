@@ -1,0 +1,47 @@
+name: E2E
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+      - name: Install sops
+        run: |
+          curl -L https://github.com/getsops/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64 -o /usr/local/bin/sops
+          chmod +x /usr/local/bin/sops
+      - name: Install age
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y age
+      - name: Build envdesk
+        run: go build -o ./bin/envdesk ./cmd/envdesk
+      - name: Run E2E smoke tests
+        run: ./test/e2e/smoke.sh
+      - name: Run E2E mutation tests
+        run: ./test/e2e/mutations.sh
+      - name: Run E2E failure tests
+        run: ./test/e2e/failures.sh
