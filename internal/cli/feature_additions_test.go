@@ -134,7 +134,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 		"env/api/stg.env": "APP_ENV=stg\n",

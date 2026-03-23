@@ -3,6 +3,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/age-identity.sh
+source "${SCRIPT_DIR}/lib/age-identity.sh"
 ROOT="$(mktemp -d)"
 BIN="${GITHUB_WORKSPACE:-$(pwd)}/bin/envdesk"
 FAKE_EDITOR="$SCRIPT_DIR/lib/fake-editor.sh"
@@ -20,9 +22,7 @@ echo ""
 cd "$ROOT"
 git init -q
 
-age-keygen -o age.txt >/dev/null 2>&1
-RECIPIENT="$(grep '^# public key:' age.txt | sed 's/# public key: //')"
-export SOPS_AGE_KEY_FILE="$ROOT/age.txt"
+e2e_setup_age_identity
 
 # Initialize with encryption
 "$BIN" init --services api --envs dev,stg,prod --sops --encrypt --age "$RECIPIENT"

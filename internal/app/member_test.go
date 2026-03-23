@@ -31,10 +31,9 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
   - path_regex: ^env/web/.*\.env$
-    age:
-      - age1webexistingrecipient0000000000000000000000000000000000
+    age: age1webexistingrecipient0000000000000000000000000000000000
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 		"env/api/stg.env": "APP_ENV=stg\n",
@@ -82,11 +81,11 @@ services:
 	if len(loaded.CreationRules) != 2 {
 		t.Fatalf("len(loaded.CreationRules) = %d, want 2", len(loaded.CreationRules))
 	}
-	if len(loaded.CreationRules[0].Age) != 1 || loaded.CreationRules[0].Age[0] != "age1aliceexamplerecipient0000000000000000000000000000000" {
-		t.Fatalf("api recipients = %#v, want added recipient", loaded.CreationRules[0].Age)
+	if loaded.CreationRules[0].Age != "age1aliceexamplerecipient0000000000000000000000000000000" {
+		t.Fatalf("api age = %q, want added recipient", loaded.CreationRules[0].Age)
 	}
-	if len(loaded.CreationRules[1].Age) != 1 || loaded.CreationRules[1].Age[0] != "age1webexistingrecipient0000000000000000000000000000000000" {
-		t.Fatalf("web recipients = %#v, want preserved recipient", loaded.CreationRules[1].Age)
+	if loaded.CreationRules[1].Age != "age1webexistingrecipient0000000000000000000000000000000000" {
+		t.Fatalf("web age = %q, want preserved recipient", loaded.CreationRules[1].Age)
 	}
 }
 
@@ -101,9 +100,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age:
-      - age1aliceexamplerecipient0000000000000000000000000000000
-      - age1bobexamplerecipient000000000000000000000000000000000
+    age: age1aliceexamplerecipient0000000000000000000000000000000, age1bobexamplerecipient000000000000000000000000000000000
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
@@ -131,8 +128,8 @@ services:
 	if len(loaded.CreationRules) != 1 {
 		t.Fatalf("len(loaded.CreationRules) = %d, want 1", len(loaded.CreationRules))
 	}
-	if len(loaded.CreationRules[0].Age) != 1 || loaded.CreationRules[0].Age[0] != "age1bobexamplerecipient000000000000000000000000000000000" {
-		t.Fatalf("recipients = %#v, want bob only", loaded.CreationRules[0].Age)
+	if loaded.CreationRules[0].Age != "age1bobexamplerecipient000000000000000000000000000000000" {
+		t.Fatalf("age = %q, want bob only", loaded.CreationRules[0].Age)
 	}
 }
 
@@ -147,8 +144,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age:
-      - age1aliceexamplerecipient0000000000000000000000000000000
+    age: age1aliceexamplerecipient0000000000000000000000000000000
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
@@ -242,8 +238,8 @@ func loadTestSOPSConfig(t *testing.T, path string) testSOPSConfig {
 
 type testSOPSConfig struct {
 	CreationRules []struct {
-		PathRegex string   `yaml:"path_regex"`
-		Age       []string `yaml:"age"`
+		PathRegex string `yaml:"path_regex"`
+		Age       string `yaml:"age"`
 	} `yaml:"creation_rules"`
 }
 
@@ -258,7 +254,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 		"keys/alice.pub":  "age1aliceexamplerecipient0000000000000000000000000000000\n",
@@ -293,7 +289,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
@@ -334,7 +330,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 		"empty.pub":       "\n",

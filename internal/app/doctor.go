@@ -724,15 +724,18 @@ func validateDoctorSOPSRule(result *DoctorResult, rule *yaml.Node, index int) (*
 		return nil, false
 	}
 
-	if ageNode, ok := mappingValue(rule, "age"); ok && ageNode.Kind != yaml.SequenceNode {
-		addDoctorFinding(
-			result,
-			SeverityError,
-			"sops_config",
-			".sops.yaml",
-			fmt.Sprintf("validate .sops.yaml: creation rule %d age must be a sequence", index),
-		)
-		return nil, false
+	if ageNode, ok := mappingValue(rule, "age"); ok {
+		// Scalar: SOPS 3.9+ comma-separated recipients. Sequence: legacy; sopsconfig normalizes on update.
+		if ageNode.Kind != yaml.ScalarNode && ageNode.Kind != yaml.SequenceNode {
+			addDoctorFinding(
+				result,
+				SeverityError,
+				"sops_config",
+				".sops.yaml",
+				fmt.Sprintf("validate .sops.yaml: creation rule %d age must be a scalar or sequence", index),
+			)
+			return nil, false
+		}
 	}
 
 	return re, true

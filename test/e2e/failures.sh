@@ -2,6 +2,10 @@
 # E2E failure tests - verify error handling for invalid scenarios
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/age-identity.sh
+source "${SCRIPT_DIR}/lib/age-identity.sh"
+
 ROOT="$(mktemp -d)"
 BIN="${GITHUB_WORKSPACE:-$(pwd)}/bin/envdesk"
 
@@ -18,15 +22,11 @@ echo ""
 cd "$ROOT"
 git init -q
 
-age-keygen -o age.txt >/dev/null 2>&1
-RECIPIENT="$(grep '^# public key:' age.txt | sed 's/# public key: //')"
-export SOPS_AGE_KEY_FILE="$ROOT/age.txt"
+e2e_setup_age_identity
 
 echo "--- Test: missing sops config detection ---"
-# Create project without sops
-"$BIN" init --services api --envs dev --force
-
-# Try to use encrypted operations without .sops.yaml
+# Encrypted env files require .sops.yaml; doctor skips SOPS checks in plaintext mode.
+"$BIN" init --services api --envs dev --sops --encrypt --age "$RECIPIENT" --force
 rm -f .sops.yaml
 
 if "$BIN" doctor 2>/dev/null; then

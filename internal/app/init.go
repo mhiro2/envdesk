@@ -250,16 +250,14 @@ func buildSOPSFile(ageRecipients []string) []byte {
 	builder.WriteString("creation_rules:\n")
 	builder.WriteString("  - path_regex: ^env/.*\\.env$\n")
 	if len(ageRecipients) == 0 {
-		builder.WriteString("    age: []\n")
+		builder.WriteString(`    age: ""` + "\n")
 		return []byte(builder.String())
 	}
 
-	builder.WriteString("    age:\n")
-	for _, recipient := range ageRecipients {
-		builder.WriteString("      - ")
-		builder.WriteString(recipient)
-		builder.WriteByte('\n')
-	}
+	// SOPS 3.9+ expects comma-separated recipients in a string, not a YAML sequence.
+	builder.WriteString("    age: ")
+	builder.WriteString(strings.Join(ageRecipients, ", "))
+	builder.WriteByte('\n')
 
 	return []byte(builder.String())
 }

@@ -26,7 +26,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 		"env/api/stg.env": "APP_ENV=stg\n",
@@ -89,8 +89,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age:
-      - age1aliceexamplerecipient0000000000000000000000000000000
+    age: age1aliceexamplerecipient0000000000000000000000000000000
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 	})
@@ -136,7 +135,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/api/.*\.env$
-    age: []
+    age: ""
 `,
 		"env/api/dev.env": "APP_ENV=dev\n",
 		"alice.pub":       "age1aliceexamplerecipient0000000000000000000000000000000\n",

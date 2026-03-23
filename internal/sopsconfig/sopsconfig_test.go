@@ -3,7 +3,10 @@ package sopsconfig
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestDocument_UpdateRecipients_NormalizesRecipientWhitespace(t *testing.T) {
@@ -55,15 +58,14 @@ func TestDocument_UpdateRecipients_NormalizesRecipientWhitespace(t *testing.T) {
 
 			ageNode, ok := mappingValue(document.creationRules.Content[0], "age")
 			if !ok {
-				t.Fatal("age node missing, want sequence")
+				t.Fatal("age node missing")
 			}
-			if len(ageNode.Content) != len(tt.wantValues) {
-				t.Fatalf("len(ageNode.Content) = %d, want %d", len(ageNode.Content), len(tt.wantValues))
+			if ageNode.Kind != yaml.ScalarNode {
+				t.Fatalf("age kind = %v, want scalar", ageNode.Kind)
 			}
-			for idx, value := range tt.wantValues {
-				if ageNode.Content[idx].Value != value {
-					t.Fatalf("ageNode.Content[%d].Value = %q, want %q", idx, ageNode.Content[idx].Value, value)
-				}
+			want := strings.Join(tt.wantValues, ", ")
+			if ageNode.Value != want {
+				t.Fatalf("age value = %q, want %q", ageNode.Value, want)
 			}
 		})
 	}
@@ -72,7 +74,7 @@ func TestDocument_UpdateRecipients_NormalizesRecipientWhitespace(t *testing.T) {
 func TestDocument_UpdateRecipients_RejectsBlankRecipient(t *testing.T) {
 	// Arrange
 	path := filepath.Join(t.TempDir(), ".sops.yaml")
-	data := "creation_rules:\n  - path_regex: ^env/.*\\.env$\n    age: []\n"
+	data := "creation_rules:\n  - path_regex: ^env/.*\\.env$\n    age: \"\"\n"
 	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
 		t.Fatalf("write sops config: %v", err)
 	}

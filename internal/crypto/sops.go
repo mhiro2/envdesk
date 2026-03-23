@@ -131,9 +131,13 @@ func (s *SOPS) Encrypt(ctx context.Context, path string, plaintext []byte) ([]by
 	result, runErr := s.runner.Run(ctx, Command{
 		Name: "sops",
 		Args: []string{
-			"encrypt",
+			// --config is a global flag and must appear before the subcommand (sops 3.9+).
 			"--config", configPath,
+			"encrypt",
 			"--filename-override", filepath.ToSlash(relativeTarget),
+			// Required for stdin encrypt: filename extension alone is not always enough (see sops README).
+			"--input-type", "dotenv",
+			"--output-type", "dotenv",
 		},
 		Dir:   filepath.Dir(configPath),
 		Stdin: plaintext,
@@ -165,9 +169,9 @@ func (s *SOPS) Rekey(ctx context.Context, path string) error {
 	result, runErr := s.runner.Run(ctx, Command{
 		Name: "sops",
 		Args: []string{
+			"--config", configPath,
 			"updatekeys",
 			"--yes",
-			"--config", configPath,
 			filepath.ToSlash(relativeTarget),
 		},
 		Dir: filepath.Dir(configPath),

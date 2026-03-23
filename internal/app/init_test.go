@@ -71,7 +71,7 @@ services:
 	if err != nil {
 		t.Fatalf("read sops file: %v", err)
 	}
-	if string(sopsData) != "creation_rules:\n  - path_regex: ^env/.*\\.env$\n    age: []\n" {
+	if string(sopsData) != "creation_rules:\n  - path_regex: ^env/.*\\.env$\n    age: \"\"\n" {
 		t.Fatalf("sops file = %q, want scaffolded sops config", string(sopsData))
 	}
 }

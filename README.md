@@ -79,7 +79,7 @@ Generated `.sops.yaml`:
 ```yaml
 creation_rules:
   - path_regex: ^env/.*\.env$
-    age: []
+    age: ""
 ```
 
 The scaffolded schema starts with `APP_ENV`.

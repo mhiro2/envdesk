@@ -27,7 +27,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/.*\.env$
-    age: []
+    age: ""
 `,
 		".gitignore": "*.env.local\n*.local.env\n",
 		"env.schema/api.yaml": `keys:
@@ -75,7 +75,7 @@ func TestDoctor_ValidationFailures(t *testing.T) {
 				"envdesk.yaml": "version: [\n",
 				".sops.yaml": `creation_rules:
   - path_regex: ^env/.*\.env$
-    age: []
+    age: ""
 `,
 				".gitignore": "*.env.local\n*.local.env\n",
 			},
@@ -140,7 +140,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/.*\.env$
-    age: []
+    age: ""
 `,
 		"env.schema/api.yaml": `keys:
   APP_ENV:
@@ -290,15 +290,16 @@ func TestDoctor_SOPSConfigValidationDetails(t *testing.T) {
 		{
 			name: "missing path regex",
 			sopsConfig: `creation_rules:
-  - age: []
+  - age: ""
 `,
 			wantSeverity: app.SeverityError,
 		},
 		{
-			name: "age must be a sequence",
+			name: "age must be scalar or sequence",
 			sopsConfig: `creation_rules:
   - path_regex: ^env/.*\.env$
-    age: age1recipient
+    age:
+      invalid: true
 `,
 			wantSeverity: app.SeverityError,
 		},
@@ -306,7 +307,7 @@ func TestDoctor_SOPSConfigValidationDetails(t *testing.T) {
 			name: "unmatched creation rules",
 			sopsConfig: `creation_rules:
   - path_regex: ^secrets/.*\.env$
-    age: []
+    age: ""
 `,
 			wantSeverity: app.SeverityWarning,
 		},
@@ -405,7 +406,7 @@ services:
 `,
 		".sops.yaml": `creation_rules:
   - path_regex: ^env/.*\.env$
-    age: []
+    age: ""
 `,
 		".gitignore": "*.env.local\n*.local.env\n",
 		"env.schema/api.yaml": `keys:

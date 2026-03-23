@@ -113,17 +113,23 @@ func TestSOPS_Encrypt(t *testing.T) {
 	if runner.runCommand.Name != "sops" {
 		t.Fatalf("command name = %q, want sops", runner.runCommand.Name)
 	}
-	if len(runner.runCommand.Args) != 5 {
-		t.Fatalf("len(command args) = %d, want 5", len(runner.runCommand.Args))
+	if len(runner.runCommand.Args) != 9 {
+		t.Fatalf("len(command args) = %d, want 9", len(runner.runCommand.Args))
 	}
-	if runner.runCommand.Args[0] != "encrypt" {
-		t.Fatalf("command args[0] = %q, want encrypt", runner.runCommand.Args[0])
+	if runner.runCommand.Args[0] != "--config" || runner.runCommand.Args[1] != filepath.Join(root, ".sops.yaml") {
+		t.Fatalf("command args[0:2] = %#v, want global --config", runner.runCommand.Args[0:2])
 	}
-	if runner.runCommand.Args[1] != "--config" || runner.runCommand.Args[2] != filepath.Join(root, ".sops.yaml") {
-		t.Fatalf("command args[1:3] = %#v, want config flag", runner.runCommand.Args[1:3])
+	if runner.runCommand.Args[2] != "encrypt" {
+		t.Fatalf("command args[2] = %q, want encrypt", runner.runCommand.Args[2])
 	}
 	if runner.runCommand.Args[3] != "--filename-override" || runner.runCommand.Args[4] != "env/api/dev.env" {
 		t.Fatalf("command args[3:5] = %#v, want filename override", runner.runCommand.Args[3:5])
+	}
+	if runner.runCommand.Args[5] != "--input-type" || runner.runCommand.Args[6] != "dotenv" {
+		t.Fatalf("command args[5:7] = %#v, want input-type dotenv", runner.runCommand.Args[5:7])
+	}
+	if runner.runCommand.Args[7] != "--output-type" || runner.runCommand.Args[8] != "dotenv" {
+		t.Fatalf("command args[7:9] = %#v, want output-type dotenv", runner.runCommand.Args[7:9])
 	}
 	if runner.runCommand.Dir != root {
 		t.Fatalf("command dir = %q, want %q", runner.runCommand.Dir, root)
@@ -159,11 +165,11 @@ func TestSOPS_Rekey(t *testing.T) {
 	if len(runner.runCommand.Args) != 5 {
 		t.Fatalf("len(command args) = %d, want 5", len(runner.runCommand.Args))
 	}
-	if runner.runCommand.Args[0] != "updatekeys" || runner.runCommand.Args[1] != "--yes" {
-		t.Fatalf("command args[:2] = %#v, want updatekeys --yes", runner.runCommand.Args[:2])
+	if runner.runCommand.Args[0] != "--config" || runner.runCommand.Args[1] != filepath.Join(root, ".sops.yaml") {
+		t.Fatalf("command args[0:2] = %#v, want global --config", runner.runCommand.Args[0:2])
 	}
-	if runner.runCommand.Args[2] != "--config" || runner.runCommand.Args[3] != filepath.Join(root, ".sops.yaml") {
-		t.Fatalf("command args[2:4] = %#v, want config flag", runner.runCommand.Args[2:4])
+	if runner.runCommand.Args[2] != "updatekeys" || runner.runCommand.Args[3] != "--yes" {
+		t.Fatalf("command args[2:4] = %#v, want updatekeys --yes", runner.runCommand.Args[2:4])
 	}
 	if runner.runCommand.Args[4] != "env/api/dev.env" {
 		t.Fatalf("command args[4] = %q, want env/api/dev.env", runner.runCommand.Args[4])

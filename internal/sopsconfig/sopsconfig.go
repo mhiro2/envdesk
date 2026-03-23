@@ -158,56 +158,103 @@ func updateRuleRecipients(rule *yaml.Node, recipient string, remove bool) (bool,
 			return false, nil
 		}
 
-		ageNode = &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
+		ageNode = &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: recipient}
 		rule.Content = append(rule.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "age"}, ageNode)
-	}
-	if ageNode.Kind != yaml.SequenceNode {
-		return false, fmt.Errorf("validate sops creation rule: age must be a sequence")
+		return true, nil
 	}
 
-	if entry := findRecipientNode(ageNode.Content, recipient); entry != nil {
-		if remove {
-			ageNode.Content = removeSequenceValue(ageNode.Content, recipient)
-			return true, nil
-		}
-
-		if entry.Value != recipient {
-			entry.Value = recipient
-			return true, nil
-		}
-
-		return false, nil
+	recipients, err := recipientsFromAgeNode(ageNode)
+	if err != nil {
+		return false, err
 	}
 
 	if remove {
+		next := removeRecipient(recipients, recipient)
+		if len(next) == len(recipients) {
+			return false, nil
+		}
+
+		writeAgeScalar(ageNode, next)
+		return true, nil
+	}
+
+	r := strings.TrimSpace(recipient)
+	if containsRecipient(recipients, r) {
+		canonical := joinAgeRecipients(recipients)
+		if ageNode.Kind == yaml.SequenceNode {
+			writeAgeScalar(ageNode, recipients)
+			return true, nil
+		}
+		if ageNode.Kind == yaml.ScalarNode && ageNode.Value != canonical {
+			writeAgeScalar(ageNode, recipients)
+			return true, nil
+		}
+
 		return false, nil
 	}
 
-	ageNode.Content = append(ageNode.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: recipient})
+	next := append(slices.Clone(recipients), r)
+	writeAgeScalar(ageNode, next)
 	return true, nil
 }
 
-func findRecipientNode(nodes []*yaml.Node, recipient string) *yaml.Node {
-	for _, node := range nodes {
-		if strings.TrimSpace(node.Value) == recipient {
-			return node
-		}
+func recipientsFromAgeNode(ageNode *yaml.Node) ([]string, error) {
+	if ageNode.Kind == yaml.ScalarNode {
+		return splitAgeRecipients(ageNode.Value), nil
 	}
-
-	return nil
+	if ageNode.Kind == yaml.SequenceNode {
+		out := make([]string, 0, len(ageNode.Content))
+		for _, n := range ageNode.Content {
+			if n.Kind != yaml.ScalarNode {
+				return nil, fmt.Errorf("validate sops creation rule: age list entries must be scalars")
+			}
+			if t := strings.TrimSpace(n.Value); t != "" {
+				out = append(out, t)
+			}
+		}
+		return out, nil
+	}
+	return nil, fmt.Errorf("validate sops creation rule: age must be a scalar or sequence")
 }
 
-func removeSequenceValue(nodes []*yaml.Node, value string) []*yaml.Node {
-	filtered := make([]*yaml.Node, 0, len(nodes))
-	for _, node := range nodes {
-		if strings.TrimSpace(node.Value) == value {
+func splitAgeRecipients(s string) []string {
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+func joinAgeRecipients(values []string) string {
+	return strings.Join(values, ", ")
+}
+
+func containsRecipient(values []string, recipient string) bool {
+	return slices.ContainsFunc(values, func(v string) bool { return v == recipient })
+}
+
+func removeRecipient(values []string, recipient string) []string {
+	r := strings.TrimSpace(recipient)
+	filtered := make([]string, 0, len(values))
+	for _, v := range values {
+		if v == r {
 			continue
 		}
-
-		filtered = append(filtered, node)
+		filtered = append(filtered, v)
 	}
-
 	return filtered
+}
+
+// writeAgeScalar stores recipients as a comma-separated scalar (SOPS 3.9+).
+func writeAgeScalar(ageNode *yaml.Node, recipients []string) {
+	ageNode.Kind = yaml.ScalarNode
+	ageNode.Tag = "!!str"
+	ageNode.Style = 0
+	ageNode.Content = nil
+	ageNode.Value = joinAgeRecipients(recipients)
 }
 
 func mappingValue(node *yaml.Node, key string) (*yaml.Node, bool) {
