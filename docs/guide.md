@@ -9,6 +9,8 @@
 - either `age` or a local age key for `doctor`
 - an `envdesk.yaml` file, or start with `envdesk init`
 
+If SOPS and age are new to you, start with [docs/getting-started.md](./getting-started.md).
+
 ## Repository Layout
 
 The default layout is:
@@ -122,6 +124,8 @@ Optional local automation material is included in this repository:
 
 The sample hooks and helper script assume a Bash-compatible shell. On Windows, use Git Bash or adapt them to PowerShell for local automation.
 
+For **GitHub Actions** and **GitLab CI** (installing `sops` and `age`, wiring `SOPS_AGE_KEY_FILE`, and running `envdesk lint` / `check-sync`), see [docs/ci-integration.md](./ci-integration.md).
+
 Recommended local wiring:
 
 ```bash
@@ -138,7 +142,7 @@ For a new teammate:
 2. Preview the affected files with `envdesk member add <recipient> --dry-run`.
 3. Re-encrypt affected files with `--rekey` or `envdesk rekey`.
 4. Share the repository workflow for `envdesk export` and `envdesk doctor`.
-5. Point them at `README.md` and this guide.
+5. Point them at `README.md`, [docs/getting-started.md](./getting-started.md) if they are new to SOPS/age, and this guide.
 
 ## Common Tasks
 

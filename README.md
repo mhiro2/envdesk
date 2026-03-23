@@ -42,6 +42,7 @@ Release builds embed version metadata, so `envdesk --version` reports the build 
 ## 🚀 Getting Started
 
 This is the shortest path from an empty repository to a reviewable encrypted env workflow.
+New to SOPS and age? Use [docs/getting-started.md](./docs/getting-started.md) for tool install, keys, and concepts first.
 
 ### 1. Scaffold one service and one environment
 
@@ -257,12 +258,16 @@ envdesk lint
 envdesk check-sync --json
 ```
 
+CI examples for GitHub Actions and GitLab (including how to supply an age key for `sops`) live in [docs/ci-integration.md](./docs/ci-integration.md).
+
 `envdesk doctor` is the repository-level safety check for local setups. It detects missing tools, unsafe `.gitignore` rules, tracked plaintext env files, and permissive plaintext file modes.
 It also reports whether the repository currently looks like `encrypted`, `plaintext`, or `mixed` mode.
 
 ## 📚 Learn More
 
-- [docs/guide.md](./docs/guide.md): step-by-step workflows, command usage, CI hooks, onboarding, and operational guidance
+- [docs/getting-started.md](./docs/getting-started.md): SOPS and age from zero, first encrypted layout, and Git hygiene
+- [docs/guide.md](./docs/guide.md): step-by-step workflows, command usage, local hooks, onboarding, and operational guidance
+- [docs/ci-integration.md](./docs/ci-integration.md): GitHub Actions and GitLab CI job examples
 - [ARCHITECTURE.md](./ARCHITECTURE.md): package layout, data flow, command responsibilities, and security model
 
 ## 📝 License
