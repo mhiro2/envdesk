@@ -114,7 +114,20 @@ func buildInitPlans(baseDir, configPath string, services, environments []string,
 			Data:    buildSchemaFile(environments),
 			Perm:    0o644,
 		})
+	}
 
+	// SOPS config must exist before encrypting env files (real adapter looks up .sops.yaml).
+	if scaffoldSOPS {
+		sopsRelPath := ".sops.yaml"
+		plans = append(plans, initPlan{
+			RelPath: sopsRelPath,
+			AbsPath: filepath.Join(baseDir, sopsRelPath),
+			Data:    buildSOPSFile(ageRecipients),
+			Perm:    0o644,
+		})
+	}
+
+	for _, service := range services {
 		for _, environment := range environments {
 			envRelPath := filepath.ToSlash(filepath.Join("env", service, environment+".env"))
 			plans = append(plans, initPlan{
@@ -125,16 +138,6 @@ func buildInitPlans(baseDir, configPath string, services, environments []string,
 				EnvFile: true,
 			})
 		}
-	}
-
-	if scaffoldSOPS {
-		sopsRelPath := ".sops.yaml"
-		plans = append(plans, initPlan{
-			RelPath: sopsRelPath,
-			AbsPath: filepath.Join(baseDir, sopsRelPath),
-			Data:    buildSOPSFile(ageRecipients),
-			Perm:    0o644,
-		})
 	}
 
 	return plans

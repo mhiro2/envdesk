@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -212,6 +213,62 @@ func TestInit_EncryptMode_WritesEncryptedEnvFiles(t *testing.T) {
 	}
 	if string(decrypted) != "APP_ENV=dev\n" {
 		t.Fatalf("decrypted env file = %q, want scaffolded plaintext", string(decrypted))
+	}
+}
+
+func hasAncestorFile(targetPath, baseName string) bool {
+	dir := filepath.Dir(filepath.Clean(targetPath))
+	for {
+		_, err := os.Stat(filepath.Join(dir, baseName))
+		if err == nil {
+			return true
+		}
+		if !os.IsNotExist(err) {
+			return false
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return false
+		}
+		dir = parent
+	}
+}
+
+// encryptAdapterRequiringSOPS fails Encrypt like SOPS when .sops.yaml is missing along the
+// ancestor walk from the env file, so Init must write .sops.yaml before encrypting env files.
+type encryptAdapterRequiringSOPS struct {
+	cryptotest.FakeEncryptAdapter
+}
+
+func (a *encryptAdapterRequiringSOPS) Encrypt(ctx context.Context, path string, plaintext []byte) ([]byte, error) {
+	if !hasAncestorFile(path, ".sops.yaml") {
+		return nil, fmt.Errorf("lookup sops config for %q: not found", path)
+	}
+
+	out, err := a.FakeEncryptAdapter.Encrypt(ctx, path, plaintext)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt scaffold file: %w", err)
+	}
+
+	return out, nil
+}
+
+func TestInit_EncryptMode_SOPSScaffoldPrecedesEnvEncryption(t *testing.T) {
+	// Arrange
+	root := t.TempDir()
+	configPath := filepath.Join(root, "envdesk.yaml")
+
+	// Act
+	_, err := app.Init(t.Context(), &encryptAdapterRequiringSOPS{}, app.InitOptions{
+		ConfigPath:    configPath,
+		ScaffoldSOPS:  true,
+		Encrypt:       true,
+		AgeRecipients: []string{"age1example"},
+	})
+	// Assert
+	if err != nil {
+		t.Fatalf("Init() error = %v, want nil", err)
 	}
 }
 
