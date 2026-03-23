@@ -4,16 +4,16 @@
 
 `envdesk` assumes a Git repository with encrypted env files managed by SOPS and age.
 
-- supported platforms: macOS, Linux, Windows
-- `sops` available in your shell for edit, export, and rekey workflows
-- either `age` or a local age key for `doctor`
-- an `envdesk.yaml` file, or start with `envdesk init`
+- **Supported platforms:** macOS, Linux, Windows
+- **`sops` on `PATH`** for `edit`, `export`, and `rekey`
+- **`age` or a local age key** for `doctor` and any flow that decrypts
+- **`envdesk.yaml`**, or run `envdesk init` to create one
 
 If SOPS and age are new to you, start with [docs/getting-started.md](./getting-started.md).
 
-## Repository Layout
+## Repository layout
 
-The default layout is:
+The default layout is (see also [Project config (`envdesk.yaml`)](../README.md#-project-config-envdeskyaml) in the README):
 
 ```text
 repo/
@@ -36,7 +36,7 @@ The `recipient` is an age public key such as `age1...`.
 Configured `schema` and env file paths must remain under the directory that contains `envdesk.yaml`.
 Absolute paths or `../` escapes outside that repository root are rejected.
 
-## Typical Workflow
+## Typical workflow
 
 1. Run `envdesk init` for a fresh repository.
 2. Edit encrypted env files with `envdesk edit <service> <environment>`.
@@ -44,7 +44,7 @@ Absolute paths or `../` escapes outside that repository root are rejected.
 4. Validate structure with `envdesk lint` and `envdesk check-sync`.
 5. Reconcile recipients with `envdesk member add/remove` and `envdesk rekey`.
 
-## Safe Editing
+## Safe editing
 
 `envdesk edit` decrypts a target env file through `sops`, opens the plaintext in `$EDITOR` or `--editor`, re-parses the edited content, validates it against schema unless `--no-lint` is set, and re-encrypts on success.
 On Windows, editors such as `notepad.exe` and `code.cmd --wait` work through the native command shell.
@@ -54,7 +54,7 @@ Encrypted env writes and `.sops.yaml` updates use atomic replacement writes to r
 
 When the edited file still matches the supported env dialect, `envdesk edit` re-encrypts the edited plaintext as-is instead of normalizing it first.
 
-## Exporting Plaintext
+## Exporting plaintext
 
 `envdesk export` is the explicit plaintext escape hatch.
 
@@ -95,7 +95,9 @@ Use it when you want one review-oriented snapshot before a change or release.
 
 `envdesk example generate` writes `.env.example` entries with schema metadata comments so requiredness, type, secret-ness, and enum values are visible in the generated file.
 
-## Env File Dialect And Normalization
+## Env file dialect and normalization
+
+This section describes **syntax inside `*.env` files** (assignments and comments), not `envdesk.yaml` or schema YAML. For the latter, see [Project config (`envdesk.yaml`)](../README.md#-project-config-envdeskyaml).
 
 `envdesk` uses a deliberately small parser for env files.
 
@@ -115,18 +117,24 @@ Use it when you want one review-oriented snapshot before a change or release.
 - missing ignore rules for plaintext outputs
 - permissive plaintext env file modes on platforms with POSIX permission bits
 
-## CI And Hooks
+## CI and hooks
 
-Optional local automation material is included in this repository:
+Sample hooks and scripts ship with this repository:
 
-- `hooks/pre-commit.sample` and `hooks/pre-push.sample` show how to wire local checks
-- `scripts/check-env-conventions.sh` rejects tracked env files that do not look encrypted
+- `hooks/pre-commit.sample` and `hooks/pre-push.sample` — copy into `.git/hooks` to run checks before commit or push
+- `scripts/check-env-conventions.sh` — fails when tracked `*.env` paths (except `*.example`) lack SOPS markers (`ENC[` or `sops:`)
 
-The sample hooks and helper script assume a Bash-compatible shell. On Windows, use Git Bash or adapt them to PowerShell for local automation.
+They assume a Bash-compatible shell. On Windows, use Git Bash or adapt to PowerShell. The envdesk binary itself runs on Windows; CI runners often use Linux and the same three checks as below.
 
-For **GitHub Actions** and **GitLab CI** (installing `sops` and `age`, wiring `SOPS_AGE_KEY_FILE`, and running `envdesk lint` / `check-sync`), see [docs/ci-integration.md](./ci-integration.md).
+**Checks (same order as CI):**
 
-Recommended local wiring:
+1. **Plaintext guard** — `bash scripts/check-env-conventions.sh` (no decryption, no age key).
+2. **Schema** — `envdesk lint` (needs `sops` + age identity to read encrypted files).
+3. **Drift** — `envdesk check-sync --strict-required-only --json` (same prerequisites as lint).
+
+Full job examples for **GitHub Actions** and **GitLab CI** (`sops`, `age`, `SOPS_AGE_KEY_FILE`) are in [docs/ci-integration.md](./ci-integration.md).
+
+**Install the sample hooks locally:**
 
 ```bash
 cp hooks/pre-commit.sample .git/hooks/pre-commit
@@ -144,7 +152,7 @@ For a new teammate:
 4. Share the repository workflow for `envdesk export` and `envdesk doctor`.
 5. Point them at `README.md`, [docs/getting-started.md](./getting-started.md) if they are new to SOPS/age, and this guide.
 
-## Common Tasks
+## Common tasks
 
 Use these commands for the most common follow-up tasks after initial setup:
 

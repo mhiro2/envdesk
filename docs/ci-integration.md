@@ -6,17 +6,19 @@ For local hooks and the convention script that rejects plaintext tracked env fil
 
 ## What to run in CI
 
-Typical gates:
+Run the same three checks in order; each fails on a different problem:
+
+1. **Plaintext guard** — `bash scripts/check-env-conventions.sh` walks the Git index and fails if a tracked `*.env` (except `*.example`) has no SOPS markers (`ENC[` or `sops:`). **No decryption** and **no age key** required.
+2. **Schema** — `envdesk lint` validates every env file against its service schema. Requires `sops` and an age identity that can decrypt those files.
+3. **Drift** — `envdesk check-sync --strict-required-only --json` reports missing required keys across environments. Same decrypt prerequisites as `lint`. `--json` is for logs; the job still exits non-zero when drift exists.
 
 ```bash
-bash scripts/check-env-conventions.sh   # optional; no decryption
+bash scripts/check-env-conventions.sh
 envdesk lint
 envdesk check-sync --strict-required-only --json
 ```
 
-`check-env-conventions.sh` only inspects whether tracked `*.env` files look encrypted (SOPS markers). It does **not** need age keys.
-
-`envdesk lint` and `envdesk check-sync` **decrypt** env files through `sops`, so the job must have an age **identity** that matches a recipient in `.sops.yaml` (same as local development).
+`lint` and `check-sync` call `sops` to decrypt, so the runner needs the same **age identity** you use locally (recipient listed in `.sops.yaml`), usually via `SOPS_AGE_KEY_FILE` or `SOPS_AGE_KEY`.
 
 ## Secrets and safety
 

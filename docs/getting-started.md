@@ -39,7 +39,9 @@ Installation options vary by OS. Official sources:
 
 - age: [FiloSottile/age releases](https://github.com/FiloSottile/age/releases)
 - sops: [getsops/sops releases](https://github.com/getsops/sops/releases)
-- envdesk: [README.md](../README.md#-install)
+- envdesk: [Install](../README.md#-install) in the README
+
+With [Homebrew](https://brew.sh) on macOS or Linux you can run `brew install sops age` before installing envdesk.
 
 Verify:
 
@@ -153,4 +155,4 @@ Details: [Onboarding](./guide.md#onboarding) in the guide.
 
 - [docs/guide.md](./guide.md) — full workflows, commands, hooks, and operational detail
 - [docs/ci-integration.md](./ci-integration.md) — GitHub Actions and GitLab CI
-- [README.md](../README.md) — install, quick start, and comparison with other tools
+- [README.md](../README.md) — install, quick start, project layout, and positioning next to similar tools

@@ -15,7 +15,7 @@
 
 The design is intentionally local-first. `envdesk` reads repository files, validates them, and invokes `sops` for encryption and decryption. It does not implement its own cryptography or depend on a remote secrets service.
 
-## Data Flow
+## Data flow
 
 1. The CLI resolves the repository config path.
 2. `internal/config` loads the service layout and file mappings.
@@ -26,7 +26,7 @@ The design is intentionally local-first. `envdesk` reads repository files, valid
 
 This keeps command implementations small and makes the command behavior easy to test with fakes.
 
-## Security Model
+## Security model
 
 `envdesk` follows a narrow security boundary:
 
@@ -37,7 +37,7 @@ This keeps command implementations small and makes the command behavior easy to 
 
 The tool assumes the team uses age recipients through `.sops.yaml` and manages recipient changes with `member` and `rekey`.
 
-## Command Responsibilities
+## Command responsibilities
 
 - `init` scaffolds repository layout and config files, and can encrypt the initial env files when recipients are provided.
 - `edit` decrypts, opens, validates, and re-encrypts a single env file.
@@ -52,6 +52,6 @@ The tool assumes the team uses age recipients through `.sops.yaml` and manages r
 - `member add/remove` manages `.sops.yaml` recipients and supports dry-run previews.
 - `rekey` re-encrypts selected env files with the current recipient set and surfaces partial failures.
 
-## Release Flow
+## Release flow
 
 Tagged releases are expected to be built from GitHub Actions. The release workflow embeds version metadata into the binary so `envdesk --version` can report the packaged build identity, and it ships macOS, Linux, and Windows artifacts.

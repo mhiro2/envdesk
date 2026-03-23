@@ -16,12 +16,7 @@ Git-friendly env operations for teams.
 - `envdesk` is a thin UX layer over SOPS + age for repository-local env workflows
 - `envdesk` focuses on schema-aware editing, review, drift detection, and key sync for teams
 
-## ⚖️ Comparison
-
-| Tool | Best fit | How `envdesk` differs |
-| --- | --- | --- |
-| `dotenvx` | sharing and syncing dotenv-style env files | `envdesk` is more opinionated about Git review workflows, schema validation, drift checks, and SOPS-based encryption |
-| `git-crypt` | transparent file encryption for a broader set of files in a repo | `envdesk` keeps env operations explicit and adds env-aware diff, lint, sync, and example generation |
+Next to [dotenvx](https://dotenvx.com/) (encrypt dotenv-style files and keep an app-side `dotenv` workflow), `envdesk` is more opinionated about Git review workflows, schema validation, drift checks, and SOPS-based encryption. Next to [git-crypt](https://github.com/AGWA/git-crypt) (transparent encryption for selected paths in a Git repo), `envdesk` keeps env operations explicit and adds env-aware diff, lint, sync, and example generation.
 
 ## 📦 Install
 
@@ -39,10 +34,20 @@ go install github.com/mhiro2/envdesk/cmd/envdesk@latest
 
 Release builds embed version metadata, so `envdesk --version` reports the build identity from the release workflow.
 
-## 🚀 Getting Started
+## 📋 Prerequisites
+
+- **Encrypted workflows:** `sops` and `age` on your `PATH`, plus keys your team can decrypt with. Install them with your package manager or from releases ([SOPS](https://github.com/getsops/sops/releases), [age](https://github.com/FiloSottile/age/releases)). With [Homebrew](https://brew.sh) (macOS or Linux):
+
+  ```bash
+  brew install sops age
+  ```
+
+  Keys, `SOPS_AGE_KEY_FILE`, and a full walkthrough live in [docs/getting-started.md](./docs/getting-started.md). Read that before `init --sops` or `edit` if you are new to the stack.
+- **`edit`:** set `EDITOR` or pass `--editor` (on Windows, values such as `notepad.exe` or `code.cmd --wait` work).
+
+## 🚀 Getting started
 
 This is the shortest path from an empty repository to a reviewable encrypted env workflow.
-New to SOPS and age? Use [docs/getting-started.md](./docs/getting-started.md) for tool install, keys, and concepts first.
 
 ### 1. Scaffold one service and one environment
 
@@ -89,18 +94,13 @@ The `recipient` is your team's age public key such as `age1...`.
 
 ### 2. Edit the encrypted env file
 
-Open one env file, edit it safely, and write it back encrypted.
-
 ```bash
 envdesk edit api dev
 ```
 
 `edit` decrypts through `sops`, opens the plaintext in your editor, validates the result, and re-encrypts it on success.
-Set `EDITOR` or pass `--editor`; on Windows, values such as `notepad.exe` or `code.cmd --wait` work.
 
 ### 3. Export plaintext only when you need it locally
-
-Export plaintext only for short-lived local use.
 
 ```bash
 envdesk export api dev --out .env.local
@@ -110,104 +110,46 @@ Use `export` as the explicit plaintext escape hatch for short-lived local workfl
 
 ### 4. Review structure before committing
 
-Check that the file still matches schema.
-
 ```bash
 envdesk lint --service api
-```
-
-Check whether required keys drifted across environments.
-
-```bash
 envdesk check-sync --strict-required-only
 ```
 
-`lint` checks the env file against schema. `check-sync` catches key drift across environments, so it becomes more useful as you add `stg` and `prod`.
+`lint` checks env files against the schema. `check-sync` catches required-key drift across environments (more valuable once you add `stg` and `prod`).
 `envdesk check-sync --json` still exits non-zero when drift is present so CI can consume JSON without losing failure signals.
 `envdesk status` combines per-environment lint state, sync state, and last updated time into one dashboard.
 
+Other review and maintenance commands are in the [quick reference](#command-quick-reference) below; the full flow is in [docs/guide.md](./docs/guide.md).
+
 ### 5. When the repository grows
 
-After the first setup, the next common jobs are:
+After the first setup, common next steps include:
 
 - compare environments with `envdesk diff api dev stg --value-mode public`
 - align missing keys with `envdesk sync-keys api dev --to stg --placeholders`
 - manage access with `envdesk member add alice.pub --scope api --dry-run` and `envdesk rekey`
 - generate onboarding examples with `envdesk example generate`
 
-For the full operational flow, see [docs/guide.md](./docs/guide.md).
+## 🛠️ Command quick reference
 
-## 🛠️ Typical Workflows
+| Goal | Example |
+| --- | --- |
+| Edit one environment (decrypt → editor → validate → encrypt) | `envdesk edit api dev` |
+| Export plaintext for local use | `envdesk export api dev --out .env.local` |
+| Schema validation | `envdesk lint --service api` |
+| Required-key drift across environments | `envdesk check-sync --strict-required-only` |
+| Lint + sync + last-updated overview | `envdesk status --service api` |
+| Compare two environments (secrets hidden by default) | `envdesk diff api dev stg --value-mode public` |
+| Preview recipient / scope changes | `envdesk member add alice.pub --scope api --dry-run` |
+| Re-encrypt after key changes | `envdesk rekey --service api --env dev --dry-run` |
+| Generate `.env.example` for onboarding | `envdesk example generate --service api --out env/api/.env.example` |
+| Local tool and repo safety | `envdesk doctor --json` |
 
-### Daily editing
+For every subcommand, flags, and workflows, see [docs/guide.md](./docs/guide.md).
 
-Edit one environment safely.
+## ⚙️ Project config (`envdesk.yaml`)
 
-```bash
-envdesk edit api dev
-```
-
-Export plaintext for local app startup or debugging.
-
-```bash
-envdesk export api dev --out .env.local
-```
-
-### Review before merge
-
-Validate one service against schema.
-
-```bash
-envdesk lint --service api
-```
-
-Check whether required keys drifted across environments.
-
-```bash
-envdesk check-sync --strict-required-only
-```
-
-Review the overall service/environment matrix.
-
-```bash
-envdesk status --service api
-```
-
-Compare two environments without exposing secrets by default.
-
-```bash
-envdesk diff api dev stg --value-mode public
-```
-
-### Access and repository maintenance
-
-Preview recipient changes before granting access.
-
-```bash
-envdesk member add alice.pub --scope api --dry-run
-```
-
-Re-encrypt files after recipient changes.
-
-```bash
-envdesk rekey --service api --env dev --dry-run
-```
-
-Generate a shareable example file for onboarding.
-
-```bash
-envdesk example generate --service api --out env/api/.env.example
-```
-
-Check local setup and repository safety.
-
-```bash
-envdesk doctor --json
-```
-
-See [docs/guide.md](./docs/guide.md) for the full command set and detailed workflows.
-
-## ⚙️ Configuration
+This file maps **services** and **environments** to on-disk env paths and to a **schema file per service**. It does not define the syntax of lines inside `*.env` files (see **Env file syntax** below).
 
 `envdesk.yaml` uses a strict schema:
 
@@ -226,44 +168,39 @@ services:
 All configured `schema` and env file paths must stay inside the repository root that contains `envdesk.yaml`.
 Paths that escape with absolute locations or `../` are rejected during config load.
 
-Schema files define key requirements, types, and whether a key is secret. `diff`, `check-sync`, `status`, `sync-keys`, and `example generate` all use that metadata for safer output, drift classification, placeholder generation, and commented examples.
-See [docs/guide.md](./docs/guide.md) for the current schema model and command behavior.
+Per-service schema files (`env.schema/*.yaml`) declare keys, types, requiredness, and secret-ness. Commands such as `diff`, `check-sync`, `status`, `sync-keys`, and `example generate` use that metadata for safer output, drift classification, placeholders, and commented examples. See [docs/guide.md](./docs/guide.md) for the schema model and behavior.
 
-## 📝 Env File Dialect
+## 📝 Env file syntax (`*.env` files)
 
-`envdesk` intentionally supports a small dotenv subset through `internal/envfile`.
+This section is about **assignments inside env files** (for example `KEY=value` or `export KEY=value`), not about `envdesk.yaml` or schema YAML.
 
-- blank lines and full-line `#` comments are accepted
-- `KEY=value` assignments use keys in `[A-Za-z_][A-Za-z0-9_]*`
-- an `export` prefix is accepted
-- unquoted values, double-quoted escape sequences, and single-quoted literals are accepted
-- inline comments are recognized only for unquoted values when `#` is preceded by whitespace
+`envdesk` supports a **small** dotenv-style subset: blank lines and full-line `#` comments, `KEY=value` / `export KEY=value`, and common quoting rules. It does **not** implement shell expansion, command substitution, multiline values, or full compatibility with every dotenv variant.
 
-`envdesk` does not implement shell expansion, command substitution, multiline values, heredocs, or full compatibility with every dotenv/export dialect.
+`edit` keeps your validated plaintext formatting on save; `sync-keys` and `example generate` emit normalized output instead. Writes use atomic replacement where applicable.
 
-`edit` now preserves the edited plaintext bytes after validation, so supported comments and quoting survive a round trip.
-`sync-keys` and `example generate` still write normalized output, which means comments, blank lines, and original quoting are not preserved there.
-`edit`, `sync-keys`, and `.sops.yaml` updates use atomic replacement writes to reduce the risk of partial file corruption.
+Details: [Env file dialect and normalization](./docs/guide.md#env-file-dialect-and-normalization) in [docs/guide.md](./docs/guide.md).
 
-## ✅ CI And Hooks
+## ✅ CI and hooks
 
-The repository includes hook examples under [`hooks/`](./hooks) and helper scripts under [`scripts/`](./scripts).
-The core CLI supports Windows, but the sample hooks and helper script assume a Bash-compatible shell.
+Sample Git hooks live under [`hooks/`](./hooks); [`scripts/check-env-conventions.sh`](./scripts/check-env-conventions.sh) is a small guard for what gets committed. Those samples assume a Bash-compatible shell. The envdesk CLI itself supports Windows; adapt hooks or run the same checks in CI on runners that match your stack.
 
-Recommended checks:
+**Checks to run in CI (or locally before push)** — each step catches a different class of problem:
+
+1. **No accidental plaintext env in Git** — `bash scripts/check-env-conventions.sh` walks tracked `*.env` paths (skipping `*.example`) and fails if a file lacks SOPS markers (`ENC[` or `sops:`), so plaintext secrets are not committed by mistake.
+2. **Schema match** — `envdesk lint` validates every configured env file against its service schema (types, required keys, secrets metadata).
+3. **Cross-environment drift** — `envdesk check-sync --strict-required-only --json` compares required keys across environments; JSON is easy to log in CI and the process still exits non-zero when drift exists.
 
 ```bash
 bash scripts/check-env-conventions.sh
 envdesk lint
-envdesk check-sync --json
+envdesk check-sync --strict-required-only --json
 ```
 
-CI examples for GitHub Actions and GitLab (including how to supply an age key for `sops`) live in [docs/ci-integration.md](./docs/ci-integration.md).
+Encrypted files need `sops` and an age identity in that environment (for example `SOPS_AGE_KEY_FILE`). Step-by-step jobs for **GitHub Actions** and **GitLab** are in [docs/ci-integration.md](./docs/ci-integration.md).
 
-`envdesk doctor` is the repository-level safety check for local setups. It detects missing tools, unsafe `.gitignore` rules, tracked plaintext env files, and permissive plaintext file modes.
-It also reports whether the repository currently looks like `encrypted`, `plaintext`, or `mixed` mode.
+**Local developer sanity check:** `envdesk doctor` reports missing tools, weak `.gitignore` coverage for plaintext exports, tracked risky files, file modes, and whether the tree looks `encrypted`, `plaintext`, or `mixed`.
 
-## 📚 Learn More
+## 📚 Learn more
 
 - [docs/getting-started.md](./docs/getting-started.md): SOPS and age from zero, first encrypted layout, and Git hygiene
 - [docs/guide.md](./docs/guide.md): step-by-step workflows, command usage, local hooks, onboarding, and operational guidance
