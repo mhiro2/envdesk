@@ -24,11 +24,13 @@ builds:
         goarch: arm64
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 sboms:
   - artifacts: archive
@@ -45,6 +47,29 @@ changelog:
       - "^test:"
       - "^ci:"
       - "^chore:"
+
+homebrew_casks:
+  - name: envdesk
+    binaries:
+      - envdesk
+    description: Local-first CLI for managing encrypted env files across services and environments
+    homepage: https://github.com/mhiro2/envdesk
+    url:
+      verified: github.com/mhiro2/envdesk/
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/envdesk"]
+          end
+    repository:
+      owner: mhiro2
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
 
 release:
   github:
