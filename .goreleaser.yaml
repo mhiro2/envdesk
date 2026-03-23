@@ -30,6 +30,9 @@ archives:
       - goos: windows
         format: zip
 
+sboms:
+  - artifacts: archive
+
 checksum:
   name_template: checksums.txt
   algorithm: sha256
