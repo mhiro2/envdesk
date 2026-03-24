@@ -41,6 +41,9 @@ func newRootCommand(adapterFactory cryptoAdapterFactory) *cobra.Command {
 	statusCmd := newStatusCommand(adapterFactory)
 	statusCmd.GroupID = "review"
 
+	auditCmd := newAuditCommand()
+	auditCmd.GroupID = "review"
+
 	doctorCmd := newDoctorCommand()
 	doctorCmd.GroupID = "setup"
 
@@ -100,6 +103,7 @@ and aligning environment files across services and environments.`,
 		lintCmd,
 		checkSyncCmd,
 		statusCmd,
+		auditCmd,
 		doctorCmd,
 		syncKeysCmd,
 		memberCmd,
