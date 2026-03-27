@@ -89,6 +89,60 @@ services:
 	}
 }
 
+func TestMemberAdd_SharedRuleRekeysAllAffectedFiles(t *testing.T) {
+	// Arrange: a shared rule covers both api and web files
+	root := projecttest.WriteProject(t, map[string]string{
+		"envdesk.yaml": `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+  - name: web
+    files:
+      dev: env/web/dev.env
+`,
+		".sops.yaml": `creation_rules:
+  - path_regex: ^env/.*\.env$
+    age: ""
+`,
+		"env/api/dev.env": "APP_ENV=dev\n",
+		"env/web/dev.env": "APP_ENV=dev\n",
+	})
+
+	project, err := config.Load(filepath.Join(root, "envdesk.yaml"))
+	if err != nil {
+		t.Fatalf("load project: %v", err)
+	}
+
+	var rekeyPaths []string
+	adapter := &cryptotest.StubAdapter{
+		RekeyFunc: func(_ context.Context, path string) error {
+			rekeyPaths = append(rekeyPaths, path)
+			return nil
+		},
+	}
+
+	// Act: scope to api, but the shared rule also covers web
+	result, err := app.MemberAdd(t.Context(), project, adapter, app.MemberOptions{
+		Recipient: "age1aliceexamplerecipient0000000000000000000000000000000",
+		Scope:     "api",
+		Rekey:     true,
+	})
+	// Assert: both api AND web files should be affected and rekeyed
+	if err != nil {
+		t.Fatalf("MemberAdd() error = %v, want nil", err)
+	}
+	if len(result.AffectedFiles) != 2 {
+		t.Fatalf("len(result.AffectedFiles) = %d, want 2 (api + web)", len(result.AffectedFiles))
+	}
+	if len(result.RekeyedFiles) != 2 {
+		t.Fatalf("len(result.RekeyedFiles) = %d, want 2 (api + web)", len(result.RekeyedFiles))
+	}
+	if len(rekeyPaths) != 2 {
+		t.Fatalf("len(rekeyPaths) = %d, want 2 (api + web)", len(rekeyPaths))
+	}
+}
+
 func TestMemberRemove_UpdatesRecipientsWithoutRekey(t *testing.T) {
 	// Arrange
 	root := projecttest.WriteProject(t, map[string]string{
