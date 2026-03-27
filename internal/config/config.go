@@ -209,6 +209,30 @@ func validateRepoPath(baseDir, path string) error {
 		return errPathOutsideRepository
 	}
 
+	// Resolve symlinks to detect repo-external targets behind in-repo symlinks.
+	realPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		// The file may not exist yet (e.g. env files created later); skip symlink check.
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("check repository boundary: resolve symlink: %w", err)
+	}
+
+	realBase, err := filepath.EvalSymlinks(baseDir)
+	if err != nil {
+		return fmt.Errorf("check repository boundary: resolve base: %w", err)
+	}
+
+	realRel, err := filepath.Rel(realBase, realPath)
+	if err != nil {
+		return fmt.Errorf("check repository boundary: %w", err)
+	}
+
+	if realRel == ".." || strings.HasPrefix(realRel, ".."+string(filepath.Separator)) {
+		return errPathOutsideRepository
+	}
+
 	return nil
 }
 

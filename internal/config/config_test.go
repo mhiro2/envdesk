@@ -186,6 +186,47 @@ services:
 	}
 }
 
+func TestLoad_RejectsSymlinkOutsideRepository(t *testing.T) {
+	// Arrange: create a symlink inside repo pointing to an external file
+	externalDir := t.TempDir()
+	externalFile := filepath.Join(externalDir, "secret.env")
+	if err := os.WriteFile(externalFile, []byte("SECRET=leak\n"), 0o600); err != nil {
+		t.Fatalf("write external file: %v", err)
+	}
+
+	root := t.TempDir()
+	envDir := filepath.Join(root, "env", "api")
+	if err := os.MkdirAll(envDir, 0o750); err != nil {
+		t.Fatalf("mkdir env dir: %v", err)
+	}
+	symlinkPath := filepath.Join(envDir, "dev.env")
+	if err := os.Symlink(externalFile, symlinkPath); err != nil {
+		t.Fatalf("create symlink: %v", err)
+	}
+
+	configPath := filepath.Join(root, "envdesk.yaml")
+	configData := `version: 1
+services:
+  - name: api
+    files:
+      dev: env/api/dev.env
+`
+	if err := os.WriteFile(configPath, []byte(configData), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	// Act
+	_, err := Load(configPath)
+
+	// Assert
+	if err == nil {
+		t.Fatal("Load() error = nil, want non-nil (symlink to external file should be rejected)")
+	}
+	if !strings.Contains(err.Error(), "outside repository") {
+		t.Fatalf("Load() error = %q, want 'outside repository'", err.Error())
+	}
+}
+
 func TestService_EnvironmentsReturnsSorted(t *testing.T) {
 	// Arrange
 	service := Service{
