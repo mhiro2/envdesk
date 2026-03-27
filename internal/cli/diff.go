@@ -28,7 +28,7 @@ func newDiffCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			result, err := app.Diff(cmd.Context(), project, newCryptoAdapter(), args[0], args[1], args[2], app.DiffOptions{
+			result, err := app.Diff(cmd.Context(), project, newCryptoAdapter(project.BaseDir), args[0], args[1], args[2], app.DiffOptions{
 				ValueMode:    app.DiffValueMode(valueMode),
 				ShowMetadata: showMetadata,
 			})

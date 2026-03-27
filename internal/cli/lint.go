@@ -26,7 +26,7 @@ func newLintCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			result, err := app.Lint(cmd.Context(), project, newCryptoAdapter(), app.LintOptions{
+			result, err := app.Lint(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.LintOptions{
 				Service:     service,
 				Environment: environment,
 			})

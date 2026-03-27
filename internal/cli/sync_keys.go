@@ -26,7 +26,7 @@ func newSyncKeysCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			result, err := app.SyncKeys(cmd.Context(), project, newCryptoAdapter(), app.SyncKeysOptions{
+			result, err := app.SyncKeys(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.SyncKeysOptions{
 				Service:            args[0],
 				SourceEnvironment:  args[1],
 				TargetEnvironments: targets,
