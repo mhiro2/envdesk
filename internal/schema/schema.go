@@ -33,13 +33,22 @@ func Load(path string) (*Schema, error) {
 		return nil, fmt.Errorf("read schema %q: %w", path, err)
 	}
 
-	var loaded Schema
-	if err := decodeYAML(data, &loaded); err != nil {
+	loaded, err := Parse(data)
+	if err != nil {
 		return nil, fmt.Errorf("parse schema %q: %w", path, err)
 	}
 
+	return loaded, nil
+}
+
+func Parse(data []byte) (*Schema, error) {
+	var loaded Schema
+	if err := decodeYAML(data, &loaded); err != nil {
+		return nil, fmt.Errorf("decode schema: %w", err)
+	}
+
 	if err := loaded.Validate(); err != nil {
-		return nil, fmt.Errorf("validate schema %q: %w", path, err)
+		return nil, fmt.Errorf("validate schema: %w", err)
 	}
 
 	return &loaded, nil

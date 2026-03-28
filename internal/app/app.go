@@ -357,43 +357,7 @@ func CheckSync(ctx context.Context, project *config.Project, adapter crypto.Adap
 			envDocs[envName] = doc
 		}
 
-		keys := make([]string, 0)
-		for _, doc := range envDocs {
-			keys = append(keys, doc.Keys()...)
-		}
-		keys = unionKeys(keys)
-
-		for _, key := range keys {
-			missing := make([]string, 0)
-			present := make([]string, 0)
-
-			for _, envName := range envNames {
-				if _, ok := envDocs[envName].Lookup(key); ok {
-					present = append(present, envName)
-					continue
-				}
-
-				missing = append(missing, envName)
-			}
-
-			if len(missing) == 0 || len(present) == 0 {
-				continue
-			}
-
-			kind, severity := classifySyncIssue(loadedSchema, key)
-			if opts.StrictRequiredOnly && kind != SyncIssueKindRequired {
-				continue
-			}
-
-			issues = append(issues, SyncIssue{
-				Service:  service.Name,
-				Key:      key,
-				Kind:     kind,
-				Severity: severity,
-				Missing:  missing,
-				Present:  present,
-			})
-		}
+		issues = append(issues, syncIssuesForService(service.Name, envNames, envDocs, loadedSchema, opts.StrictRequiredOnly)...)
 	}
 
 	slices.SortFunc(issues, func(a, b SyncIssue) int {
@@ -405,6 +369,56 @@ func CheckSync(ctx context.Context, project *config.Project, adapter crypto.Adap
 	})
 
 	return issues, nil
+}
+
+func syncIssuesForService(serviceName string, envNames []string, envDocs map[string]*envfile.Document, loadedSchema *schema.Schema, strictRequiredOnly bool) []SyncIssue {
+	keys := make([]string, 0)
+	for _, doc := range envDocs {
+		if doc == nil {
+			continue
+		}
+
+		keys = append(keys, doc.Keys()...)
+	}
+	keys = unionKeys(keys)
+
+	issues := make([]SyncIssue, 0)
+
+	for _, key := range keys {
+		missing := make([]string, 0)
+		present := make([]string, 0)
+
+		for _, envName := range envNames {
+			if doc := envDocs[envName]; doc != nil {
+				if _, ok := doc.Lookup(key); ok {
+					present = append(present, envName)
+					continue
+				}
+			}
+
+			missing = append(missing, envName)
+		}
+
+		if len(missing) == 0 || len(present) == 0 {
+			continue
+		}
+
+		kind, severity := classifySyncIssue(loadedSchema, key)
+		if strictRequiredOnly && kind != SyncIssueKindRequired {
+			continue
+		}
+
+		issues = append(issues, SyncIssue{
+			Service:  serviceName,
+			Key:      key,
+			Kind:     kind,
+			Severity: severity,
+			Missing:  missing,
+			Present:  present,
+		})
+	}
+
+	return issues
 }
 
 func SyncKeys(ctx context.Context, project *config.Project, adapter crypto.Adapter, opts SyncKeysOptions) (*SyncKeysResult, error) {

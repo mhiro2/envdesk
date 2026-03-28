@@ -118,6 +118,7 @@ envdesk check-sync --strict-required-only
 `lint` checks env files against the schema. `check-sync` catches required-key drift across environments (more valuable once you add `stg` and `prod`).
 `envdesk check-sync --json` still exits non-zero when drift is present so CI can consume JSON without losing failure signals.
 `envdesk status` combines per-environment lint state, sync state, and last updated time into one dashboard.
+`envdesk audit` shows the history view: who last changed a key, how schema metadata moved, and when the current drift state started.
 
 Other review and maintenance commands are in the [quick reference](#command-quick-reference) below; the full flow is in [docs/guide.md](./docs/guide.md).
 
@@ -127,6 +128,7 @@ After the first setup, common next steps include:
 
 - compare environments with `envdesk diff api dev stg --value-mode public`
 - align missing keys with `envdesk sync-keys api dev --to stg --placeholders`
+- inspect when drift started with `envdesk audit --service api --env dev --key DATABASE_URL`
 - manage access with `envdesk member add alice.pub --scope api --dry-run` and `envdesk rekey`
 - generate onboarding examples with `envdesk example generate`
 
@@ -139,6 +141,7 @@ After the first setup, common next steps include:
 | Schema validation | `envdesk lint --service api` |
 | Required-key drift across environments | `envdesk check-sync --strict-required-only` |
 | Lint + sync + last-updated overview | `envdesk status --service api` |
+| Trace key ownership, schema changes, and drift start dates | `envdesk audit --service api --env dev --key DATABASE_URL` |
 | Compare two environments (secrets hidden by default) | `envdesk diff api dev stg --value-mode public` |
 | Preview recipient / scope changes | `envdesk member add alice.pub --scope api --dry-run` |
 | Re-encrypt after key changes | `envdesk rekey --service api --env dev --dry-run` |
@@ -168,7 +171,7 @@ services:
 All configured `schema` and env file paths must stay inside the repository root that contains `envdesk.yaml`.
 Paths that escape with absolute locations or `../` are rejected during config load.
 
-Per-service schema files (`env.schema/*.yaml`) declare keys, types, requiredness, and secret-ness. Commands such as `diff`, `check-sync`, `status`, `sync-keys`, and `example generate` use that metadata for safer output, drift classification, placeholders, and commented examples. See [docs/guide.md](./docs/guide.md) for the schema model and behavior.
+Per-service schema files (`env.schema/*.yaml`) declare keys, types, requiredness, and secret-ness. Commands such as `diff`, `check-sync`, `status`, `audit`, `sync-keys`, and `example generate` use that metadata for safer output, drift classification, audit timelines, placeholders, and commented examples. See [docs/guide.md](./docs/guide.md) for the schema model and behavior.
 
 ## 📝 Env file syntax (`*.env` files)
 

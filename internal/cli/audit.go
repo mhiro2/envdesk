@@ -19,10 +19,10 @@ func newAuditCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "audit",
-		Short: "Show git blame based audit view of env file keys",
-		Long: `Show who added or last modified each key in env files,
-based on git blame. Useful for auditing when a key was
-introduced or changed, and by whom.`,
+		Short: "Show key, schema, and drift audit history for env files",
+		Long: `Show an audit view for env file keys from tracked git history.
+It combines current key blame, schema metadata changes, and
+drift start dates across environments.`,
 		Example: `  envdesk audit --service api --env dev
   envdesk audit --service api --env prod --key DATABASE_URL
   envdesk audit --json`,
@@ -95,11 +95,11 @@ func writeAuditTable(cmd *cobra.Command, results []app.AuditResult) error {
 		writer := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 
 		if isVerbose(cmd) {
-			if _, err := fmt.Fprintln(writer, "KEY\tAUTHOR\tDATE\tCOMMIT\tSUMMARY"); err != nil {
+			if _, err := fmt.Fprintln(writer, "KEY\tPRESENT\tREQUIRED\tSECRET\tTYPE\tVALUE_CHANGED\tSCHEMA_CHANGED\tDRIFT\tVALUE_COMMIT\tSCHEMA_COMMIT\tDRIFT_COMMIT"); err != nil {
 				return fmt.Errorf("write audit output: %w", err)
 			}
 		} else {
-			if _, err := fmt.Fprintln(writer, "KEY\tAUTHOR\tDATE\tSUMMARY"); err != nil {
+			if _, err := fmt.Fprintln(writer, "KEY\tPRESENT\tREQUIRED\tSECRET\tTYPE\tVALUE_CHANGED\tSCHEMA_CHANGED\tDRIFT"); err != nil {
 				return fmt.Errorf("write audit output: %w", err)
 			}
 		}
@@ -108,23 +108,33 @@ func writeAuditTable(cmd *cobra.Command, results []app.AuditResult) error {
 			if isVerbose(cmd) {
 				if _, err := fmt.Fprintf(
 					writer,
-					"%s\t%s\t%s\t%s\t%s\n",
+					"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 					entry.Key,
-					entry.Author,
-					entry.Date.Local().Format("2006-01-02"),
-					entry.CommitSHA[:8],
-					entry.Summary,
+					formatAuditPresent(entry.Present),
+					formatAuditRequired(entry.Schema),
+					formatAuditSecret(entry.Schema),
+					formatAuditType(entry.Schema),
+					formatAuditDate(entry.LastValueChange),
+					formatAuditDate(entry.LastSchemaChange),
+					formatAuditDrift(entry.Drift),
+					formatAuditCommit(entry.LastValueChange),
+					formatAuditCommit(entry.LastSchemaChange),
+					formatAuditCommit(entry.Drift.Since),
 				); err != nil {
 					return fmt.Errorf("write audit output: %w", err)
 				}
 			} else {
 				if _, err := fmt.Fprintf(
 					writer,
-					"%s\t%s\t%s\t%s\n",
+					"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 					entry.Key,
-					entry.Author,
-					entry.Date.Local().Format("2006-01-02"),
-					entry.Summary,
+					formatAuditPresent(entry.Present),
+					formatAuditRequired(entry.Schema),
+					formatAuditSecret(entry.Schema),
+					formatAuditType(entry.Schema),
+					formatAuditDate(entry.LastValueChange),
+					formatAuditDate(entry.LastSchemaChange),
+					formatAuditDrift(entry.Drift),
 				); err != nil {
 					return fmt.Errorf("write audit output: %w", err)
 				}
@@ -137,4 +147,69 @@ func writeAuditTable(cmd *cobra.Command, results []app.AuditResult) error {
 	}
 
 	return nil
+}
+
+func formatAuditPresent(present bool) string {
+	if present {
+		return "yes"
+	}
+
+	return "no"
+}
+
+func formatAuditRequired(state *app.AuditSchemaState) string {
+	if state == nil {
+		return "-"
+	}
+	if state.Required {
+		return "yes"
+	}
+
+	return "no"
+}
+
+func formatAuditSecret(state *app.AuditSchemaState) string {
+	if state == nil {
+		return "-"
+	}
+	if state.Secret {
+		return "yes"
+	}
+
+	return "no"
+}
+
+func formatAuditType(state *app.AuditSchemaState) string {
+	if state == nil {
+		return "-"
+	}
+
+	return state.Type
+}
+
+func formatAuditDate(fact *app.AuditFact) string {
+	if fact == nil || fact.Date.IsZero() {
+		return "-"
+	}
+
+	return fact.Date.Local().Format("2006-01-02")
+}
+
+func formatAuditCommit(fact *app.AuditFact) string {
+	if fact == nil || fact.CommitSHA == "" {
+		return "-"
+	}
+
+	return fact.CommitSHA[:8]
+}
+
+func formatAuditDrift(drift app.AuditDriftState) string {
+	if drift.State != "drift" {
+		return "ok"
+	}
+	if drift.Since == nil {
+		return string(drift.Kind)
+	}
+
+	return fmt.Sprintf("%s since %s", drift.Kind, drift.Since.Date.Local().Format("2006-01-02"))
 }

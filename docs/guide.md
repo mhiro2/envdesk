@@ -86,6 +86,14 @@ Use `--strict-required-only` when CI should fail only on missing required schema
 `envdesk status` gives a service-by-environment dashboard with lint state, sync state, and each env file's last updated time.
 Use it when you want one review-oriented snapshot before a change or release.
 
+`envdesk audit` shows a per-environment audit view for each key.
+
+- current key presence and the last tracked line change from Git
+- schema `required` / `secret` / `type` metadata and when those fields changed
+- current drift state and when the current drift started
+- `--json` includes the full merged event history for automation or deeper review
+- `--env` returns an error when the named environment is not configured
+
 `envdesk sync-keys --placeholders` inserts schema-aware defaults for missing keys.
 
 - `bool` becomes `false`
