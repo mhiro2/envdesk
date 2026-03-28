@@ -36,7 +36,7 @@ func newExportCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			plaintext, err := app.Export(cmd.Context(), project, newCryptoAdapter(), args[0], args[1])
+			plaintext, err := app.Export(cmd.Context(), project, newCryptoAdapter(project.BaseDir), args[0], args[1])
 			if err != nil {
 				return fmt.Errorf("export env file: %w", err)
 			}

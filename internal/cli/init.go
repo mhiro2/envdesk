@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -41,7 +42,7 @@ expected directory layout, and scaffolds a minimal schema and env files.`,
 				}
 			}
 
-			result, err := app.Init(cmd.Context(), newCryptoAdapter(), app.InitOptions{
+			result, err := app.Init(cmd.Context(), newCryptoAdapter(filepath.Dir(configPath)), app.InitOptions{
 				ConfigPath:    configPath,
 				Services:      services,
 				Environments:  environments,

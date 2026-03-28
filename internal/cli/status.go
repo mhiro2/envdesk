@@ -27,7 +27,7 @@ func newStatusCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			result, err := app.Status(cmd.Context(), project, newCryptoAdapter(), app.StatusOptions{
+			result, err := app.Status(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.StatusOptions{
 				Service: service,
 			})
 			if err != nil {

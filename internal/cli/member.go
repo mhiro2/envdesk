@@ -69,7 +69,7 @@ func newMemberSubcommand(newCryptoAdapter cryptoAdapterFactory, use, short, exam
 				return err
 			}
 
-			result, err := action(cmd.Context(), project, newCryptoAdapter(), app.MemberOptions{
+			result, err := action(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.MemberOptions{
 				Recipient: args[0],
 				Scope:     scope,
 				Rekey:     rekey,

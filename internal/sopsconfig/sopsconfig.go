@@ -22,8 +22,9 @@ type Document struct {
 }
 
 type UpdateRecipientsResult struct {
-	MatchedRules int
-	ChangedRules int
+	MatchedRules       int
+	ChangedRules       int
+	MatchedPathRegexes []string
 }
 
 // Load reads and validates a .sops.yaml file at the given path.
@@ -89,8 +90,16 @@ func (d *Document) UpdateRecipients(paths []string, recipient string, remove boo
 		return nil, fmt.Errorf("select sops creation rules: no matching rules")
 	}
 
+	pathRegexes := make([]string, 0, len(rules))
+	for _, rule := range rules {
+		if prNode, ok := mappingValue(rule, "path_regex"); ok && prNode.Kind == yaml.ScalarNode {
+			pathRegexes = append(pathRegexes, prNode.Value)
+		}
+	}
+
 	result := &UpdateRecipientsResult{
-		MatchedRules: len(rules),
+		MatchedRules:       len(rules),
+		MatchedPathRegexes: pathRegexes,
 	}
 	for _, rule := range rules {
 		ruleChanged, err := updateRuleRecipients(rule, normalizedRecipient, remove)

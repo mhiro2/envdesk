@@ -6,7 +6,7 @@ import (
 	"github.com/mhiro2/envdesk/internal/crypto"
 )
 
-type cryptoAdapterFactory func() crypto.Adapter
+type cryptoAdapterFactory func(repoRoot string) crypto.Adapter
 
 func NewRootCommand() *cobra.Command {
 	return newRootCommand(defaultCryptoAdapterFactory)
@@ -116,6 +116,6 @@ and aligning environment files across services and environments.`,
 	return cmd
 }
 
-func defaultCryptoAdapterFactory() crypto.Adapter {
-	return crypto.NewSOPS()
+func defaultCryptoAdapterFactory(repoRoot string) crypto.Adapter {
+	return crypto.NewSOPSForRepo(repoRoot)
 }

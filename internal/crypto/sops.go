@@ -64,11 +64,16 @@ func (execRunner) Run(ctx context.Context, cmd Command) (*Result, error) {
 }
 
 type SOPS struct {
-	runner Runner
+	runner   Runner
+	repoRoot string
 }
 
 func NewSOPS() *SOPS {
 	return NewSOPSWithRunner(execRunner{})
+}
+
+func NewSOPSForRepo(repoRoot string) *SOPS {
+	return &SOPS{runner: execRunner{}, repoRoot: repoRoot}
 }
 
 func NewSOPSWithRunner(runner Runner) *SOPS {
@@ -123,7 +128,7 @@ func (s *SOPS) Encrypt(ctx context.Context, path string, plaintext []byte) ([]by
 		return nil, err
 	}
 
-	configPath, relativeTarget, err := findSOPSConfig(targetPath)
+	configPath, relativeTarget, err := findSOPSConfig(targetPath, s.repoRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +166,7 @@ func (s *SOPS) Rekey(ctx context.Context, path string) error {
 		return err
 	}
 
-	configPath, relativeTarget, err := findSOPSConfig(targetPath)
+	configPath, relativeTarget, err := findSOPSConfig(targetPath, s.repoRoot)
 	if err != nil {
 		return err
 	}
@@ -223,8 +228,9 @@ func validatePath(path string) (string, error) {
 	return cleaned, nil
 }
 
-func findSOPSConfig(targetPath string) (string, string, error) {
+func findSOPSConfig(targetPath, repoRoot string) (string, string, error) {
 	searchDir := filepath.Dir(targetPath)
+	boundary := filepath.Clean(repoRoot)
 
 	for {
 		configPath := filepath.Join(searchDir, sopsConfigName)
@@ -243,6 +249,11 @@ func findSOPSConfig(targetPath string) (string, string, error) {
 		}
 		if !os.IsNotExist(err) {
 			return "", "", fmt.Errorf("lookup sops config for %q: %w", targetPath, err)
+		}
+
+		// Stop at the repository root to avoid inheriting a parent workspace's .sops.yaml.
+		if boundary != "" && boundary != "." && searchDir == boundary {
+			break
 		}
 
 		parentDir := filepath.Dir(searchDir)

@@ -42,7 +42,7 @@ without exposing real values.`,
 				return err
 			}
 
-			result, err := app.ExampleGenerate(cmd.Context(), project, newCryptoAdapter(), app.ExampleGenerateOptions{
+			result, err := app.ExampleGenerate(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.ExampleGenerateOptions{
 				Service: service,
 				Out:     out,
 				Force:   force,

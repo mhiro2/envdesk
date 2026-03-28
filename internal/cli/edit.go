@@ -27,7 +27,7 @@ func newEditCommand() *cobra.Command {
 				return err
 			}
 
-			result, err := app.Edit(cmd.Context(), project, crypto.NewSOPS(), app.EditOptions{
+			result, err := app.Edit(cmd.Context(), project, crypto.NewSOPSForRepo(project.BaseDir), app.EditOptions{
 				Service:     args[0],
 				Environment: args[1],
 				Editor:      editor,

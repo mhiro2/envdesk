@@ -11,7 +11,7 @@ import (
 
 func newRootCommandWithCryptoAdapter(t *testing.T, adapter crypto.Adapter) *cobra.Command {
 	t.Helper()
-	return newRootCommand(func() crypto.Adapter {
+	return newRootCommand(func(_ string) crypto.Adapter {
 		return adapter
 	})
 }

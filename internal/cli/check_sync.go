@@ -26,7 +26,7 @@ func newCheckSyncCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			issues, err := app.CheckSync(cmd.Context(), project, newCryptoAdapter(), app.CheckSyncOptions{
+			issues, err := app.CheckSync(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.CheckSyncOptions{
 				Service:            service,
 				StrictRequiredOnly: strictRequiredOnly,
 			})

@@ -26,7 +26,7 @@ func newRekeyCommand(newCryptoAdapter cryptoAdapterFactory) *cobra.Command {
 				return err
 			}
 
-			result, err := app.Rekey(cmd.Context(), project, newCryptoAdapter(), app.RekeyOptions{
+			result, err := app.Rekey(cmd.Context(), project, newCryptoAdapter(project.BaseDir), app.RekeyOptions{
 				Service: service,
 				Env:     envName,
 				DryRun:  dryRun,

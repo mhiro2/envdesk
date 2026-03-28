@@ -525,7 +525,7 @@ func TestFindSOPSConfig_NotFound(t *testing.T) {
 	targetPath := filepath.Join(t.TempDir(), "env", "api", "dev.env")
 
 	// Act
-	_, _, err := findSOPSConfig(targetPath)
+	_, _, err := findSOPSConfig(targetPath, "")
 
 	// Assert
 	if err == nil {
@@ -533,5 +533,54 @@ func TestFindSOPSConfig_NotFound(t *testing.T) {
 	}
 	if err.Error() != fmt.Sprintf("lookup sops config for %q: not found", targetPath) {
 		t.Fatalf("findSOPSConfig() error = %q, want not found", err.Error())
+	}
+}
+
+func TestFindSOPSConfig_StopsAtRepoRoot(t *testing.T) {
+	// Arrange: parent has .sops.yaml but repo root does not
+	parent := t.TempDir()
+	if err := os.WriteFile(filepath.Join(parent, ".sops.yaml"), []byte("creation_rules: []\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	repoRoot := filepath.Join(parent, "repo")
+	if err := os.MkdirAll(filepath.Join(repoRoot, "env"), 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	targetPath := filepath.Join(repoRoot, "env", "dev.env")
+
+	// Act
+	_, _, err := findSOPSConfig(targetPath, repoRoot)
+
+	// Assert: should NOT find parent's .sops.yaml
+	if err == nil {
+		t.Fatal("findSOPSConfig() error = nil, want not found (should stop at repo root)")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Fatalf("findSOPSConfig() error = %q, want not found", err.Error())
+	}
+}
+
+func TestFindSOPSConfig_FindsConfigWithinRepoRoot(t *testing.T) {
+	// Arrange
+	repoRoot := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repoRoot, ".sops.yaml"), []byte("creation_rules: []\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(repoRoot, "env", "api"), 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	targetPath := filepath.Join(repoRoot, "env", "api", "dev.env")
+
+	// Act
+	configPath, relTarget, err := findSOPSConfig(targetPath, repoRoot)
+	// Assert
+	if err != nil {
+		t.Fatalf("findSOPSConfig() error = %v, want nil", err)
+	}
+	if configPath != filepath.Join(repoRoot, ".sops.yaml") {
+		t.Fatalf("configPath = %q, want %q", configPath, filepath.Join(repoRoot, ".sops.yaml"))
+	}
+	if relTarget != filepath.Join("env", "api", "dev.env") {
+		t.Fatalf("relTarget = %q, want env/api/dev.env", relTarget)
 	}
 }
