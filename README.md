@@ -1,8 +1,22 @@
-# 🔐 envdesk
+<p align="center">
+  <img src="assets/logo.png" width="256" height="256" alt="envdesk logo">
+</p>
 
-Git-friendly env operations for teams.
+<h1 align="center">envdesk</h1>
 
-`envdesk` is a local-first CLI for managing encrypted env files across services and environments.
+<p align="center">
+  <strong>Git-friendly env operations for teams.</strong><br>
+  <code>envdesk</code> is a local-first CLI for managing encrypted env files across services and environments.
+</p>
+
+<p align="center">
+  <a href="https://github.com/mhiro2/envdesk/actions/workflows/ci.yaml">
+    <img src="https://github.com/mhiro2/envdesk/actions/workflows/ci.yaml/badge.svg" alt="CI">
+  </a>
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
+</p>
+
+---
 
 ## ✨ Why envdesk?
 
